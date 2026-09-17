@@ -44,7 +44,8 @@ ${JSON.stringify(summary, null, 2)}`;
         model: "openai/gpt-oss-120b",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
-        max_tokens: 500,
+        max_tokens: 1200,
+        reasoning_effort: "low",
       }),
     });
 
