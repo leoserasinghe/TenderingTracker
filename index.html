@@ -167,20 +167,15 @@ async function loadAll(){
     const divTarget   = divRows.map(r => num(r[1]));
     const divAchieved = divRows.map(r => num(r[2]));
 
-    // ---- Executive summary: this block mixes section-header rows and data rows,
-    // and merged cells can shift row alignment, so anchor on the header text itself
-    // and take the first numeric row that appears after it — not a fixed offset.
+    // ---- Executive summary: Google's API detects 2 header rows here (since the
+    // first two sheet rows are text-only), so both get stripped automatically —
+    // meaning the revenue/GP numbers are just the numeric rows in what's left,
+    // with no header row of our own to skip. "Coverage"/"margin" rows are found
+    // by their own label text, which IS still present in the returned rows.
     const findRow = (matchText) => executive.find(r => r.some(cell => txt(cell).toLowerCase().includes(matchText))) || null;
-    const firstNumericRowAfter = (anchorRow) => {
-      if (!anchorRow) return [{},{},{},{}];
-      const idx = executive.indexOf(anchorRow);
-      for (let i = idx + 1; i < executive.length; i++){
-        if (isNum(executive[i][0])) return executive[i];
-      }
-      return [{},{},{},{}];
-    };
-    const revenue = firstNumericRowAfter(findRow('revenue'));
-    const gp      = firstNumericRowAfter(findRow('gross profit'));
+    const numericRows = executive.filter(r => isNum(r[0]));
+    const revenue = numericRows[0] || [{},{},{},{}]; // first numeric row = revenue target/won/balance/%
+    const gp      = numericRows[1] || [{},{},{},{}]; // second numeric row = gross profit target/won/balance/%
     const pipeCovRow = findRow('coverage') || [{},{},{},{}];
     const marginRow  = findRow('margin') || [{},{},{},{}];
 
