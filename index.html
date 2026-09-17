@@ -170,7 +170,7 @@ async function loadAll(){
     // ---- Executive summary: this block mixes section-header rows and data rows,
     // and merged cells can shift row alignment, so anchor on the header text itself
     // and take the first numeric row that appears after it — not a fixed offset.
-    const findRow = (matchText) => executive.find(r => txt(r[0]).toLowerCase().includes(matchText)) || null;
+    const findRow = (matchText) => executive.find(r => r.some(cell => txt(cell).toLowerCase().includes(matchText))) || null;
     const firstNumericRowAfter = (anchorRow) => {
       if (!anchorRow) return [{},{},{},{}];
       const idx = executive.indexOf(anchorRow);
