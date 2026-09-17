@@ -160,6 +160,7 @@ async function loadAll(){
     const pipeRows = pipeline.slice(1).filter(r => txt(r[0]));
     const pipeLabels = pipeRows.map(r => txt(r[0]));
     const pipeCounts = pipeRows.map(r => num(r[1]));
+    const pipeValues = pipeRows.map(r => num(r[2]) / 1_000_000);
 
     // ---- Divisions: 0 Division, 1 Target, 2 Achieved, 3 Balance(text) ----
     const divRows = divisions.slice(1, divisions.length - 1).filter(r => txt(r[0]));
@@ -180,7 +181,7 @@ async function loadAll(){
     const marginRow  = findRow('margin') || [{},{},{},{}];
 
     lastData = { qsNames, qsQuoted, qsWon, qsWinRate, qsHitRate, totalRow,
-                 pipeLabels, pipeCounts, divNames, divTarget, divAchieved,
+                 pipeLabels, pipeCounts, pipeValues, divNames, divTarget, divAchieved,
                  revenue, gp, pipeCov: pipeCovRow, margin: marginRow };
 
     renderStatCards(lastData);
@@ -197,16 +198,29 @@ async function loadAll(){
 function renderStatCards(d){
   const revTarget = num(d.revenue[0]), revWon = num(d.revenue[1]), revPct = pct(d.revenue[3]);
   const gpTarget = num(d.gp[0]), gpWon = num(d.gp[1]), gpPct = pct(d.gp[3]);
-  const cov = fmt(d.pipeCov[3]) || '—';
-  // totalRow uses the same 0-indexed column layout as qsRows above
   const totalWon = num(d.totalRow[4]), totalLost = num(d.totalRow[5]);
-  const overallWinRate = fmt(d.totalRow[8]) || '—';
+  const totalQuotedMn = num(d.totalRow[6]) / 1_000_000;
+  const totalWonValueMn = num(d.totalRow[7]) / 1_000_000;
+  const overallWinRateDisplay = fmt(d.totalRow[8]) || '—';
+  const overallWinRateFrac = pct(d.totalRow[8]) / 100;
+
+  // Raw ratio: every deal ever quoted (won+lost+open) vs target — kept only as a
+  // reference figure, since it overstates what's realistically achievable.
+  const rawMultiple = revTarget > 0 ? (totalQuotedMn / revTarget) : 0;
+
+  // Weighted: money already won, plus still-open pipeline discounted by the
+  // actual win rate. Lost/cancelled deals contribute nothing.
+  const openStatuses = ['Submitted', 'Under Review', 'Quoting', 'On Hold'];
+  const openValueMn = d.pipeLabels.reduce((sum, label, i) =>
+    openStatuses.includes(label) ? sum + d.pipeValues[i] : sum, 0);
+  const expectedTotalMn = totalWonValueMn + (openValueMn * overallWinRateFrac);
+  const weightedPct = revTarget > 0 ? (expectedTotalMn / revTarget) * 100 : 0;
 
   const cards = [
     { label:'Revenue: target vs won', value:`${revWon.toFixed(1)} / ${revTarget.toFixed(0)} Mn`, footer:`${revPct.toFixed(1)}% of target` },
     { label:'Gross profit: target vs won', value:`${gpWon.toFixed(1)} / ${gpTarget.toFixed(0)} Mn`, footer:`${gpPct.toFixed(1)}% of target` },
-    { label:'Pipeline coverage vs target', value: cov, footer:'total open+won value ÷ target' },
-    { label:'Overall win rate', value: overallWinRate, footer:`${totalWon} won · ${totalLost} lost` },
+    { label:'Weighted pipeline (win-rate adj.)', value:`${weightedPct.toFixed(0)}%`, footer:`raw pipeline is ${rawMultiple.toFixed(1)}× target (unweighted)` },
+    { label:'Overall win rate', value: overallWinRateDisplay, footer:`${totalWon} won · ${totalLost} lost` },
   ];
   document.getElementById('statCards').innerHTML = cards.map(c => `
     <div class="card stat">
