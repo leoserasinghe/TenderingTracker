@@ -3,7 +3,19 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tendering Tracker — GA Division</title>
+<title>Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard</title>
+<meta name="description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta property="og:description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta property="og:image" content="https://dulcet-puffpuff-958ab0.netlify.app/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:url" content="https://dulcet-puffpuff-958ab0.netlify.app/" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta name="twitter:description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta name="twitter:image" content="https://dulcet-puffpuff-958ab0.netlify.app/og-image.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -39,7 +51,9 @@
     flex-wrap:wrap; margin-bottom:22px; padding-bottom:18px;
     border-bottom:1px solid var(--border-soft);
   }
-  .brand h1{
+  .brand{ display:flex; align-items:center; gap:18px; }
+  .brand img.logo{ height:52px; width:auto; display:block; }
+  .brand .brand-text h1{
     font-size:26px; font-weight:700; margin:0; letter-spacing:-0.02em;
   }
   .brand .sub{color:var(--muted); font-size:13.5px; margin-top:6px; max-width:46ch;}
@@ -156,8 +170,11 @@
 
 <header>
   <div class="brand">
-    <h1 class="headline">Tendering Tracker</h1>
-    <div class="sub">Live sales pipeline for Hayleys Fentons : GA Division</div>
+    <img src="logo.png" alt="Hayleys Fentons" class="logo" />
+    <div class="brand-text">
+      <h1 class="headline">Tendering Tracker</h1>
+      <div class="sub">Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard</div>
+    </div>
   </div>
   <dl class="titleblock">
     <dt>Division</dt><dd>GA</dd>
