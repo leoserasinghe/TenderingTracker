@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tendering Tracker — Live Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222c; --border:#2a2f3a;
+    --text:#e8eaed; --muted:#9aa3b2; --accent:#4f8cff; --good:#33c17a;
+    --bad:#e5534b; --warn:#e6b422;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:24px;
+  }
+  h1{font-size:22px; margin:0 0 2px 0;}
+  .sub{color:var(--muted); font-size:13px; margin-bottom:20px;}
+  .toolbar{display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;}
+  button{
+    background:var(--accent); color:#fff; border:none; padding:9px 16px;
+    border-radius:8px; font-size:13px; cursor:pointer; font-weight:600;
+  }
+  button:disabled{opacity:.5; cursor:default;}
+  button.secondary{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+  #status{font-size:12px; color:var(--muted);}
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px;}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);}}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px;}
+  .stat .label{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em;}
+  .stat .value{font-size:26px; font-weight:700; margin-top:6px;}
+  .stat .footer{font-size:12px; color:var(--muted); margin-top:4px;}
+  .charts{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media(max-width:900px){.charts{grid-template-columns:1fr;}}
+  .chart-card h3{margin:0 0 12px 0; font-size:14px; color:var(--muted); font-weight:600;}
+  canvas{max-height:280px;}
+  #insightsCard{margin-top:16px;}
+  #insightsText{white-space:pre-wrap; line-height:1.5; font-size:14px; margin-top:10px;}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;}
+  .pill.good{background:rgba(51,193,122,.15); color:var(--good);}
+  .pill.bad{background:rgba(229,83,75,.15); color:var(--bad);}
+  a{color:var(--accent);}
+</style>
+</head>
+<body>
+
+<h1>Tendering Tracker — Live Dashboard</h1>
+<div class="sub">Reads live from the "Dashboard" tab of your Google Sheet. The sheet itself is untouched — this only reads it.</div>
+
+<div class="toolbar">
+  <button id="refreshBtn" onclick="loadAll()">↻ Refresh now</button>
+  <button id="aiBtn" class="secondary" onclick="getAIInsights()">✨ Generate AI insights</button>
+  <span id="status">Loading…</span>
+</div>
+
+<div class="grid" id="statCards"></div>
+
+<div class="charts">
+  <div class="card chart-card">
+    <h3>Quoted vs. Won value by QS (LKR, Mn)</h3>
+    <canvas id="valueChart"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h3>Win rate vs. hit rate by QS</h3>
+    <canvas id="rateChart"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h3>Pipeline by status (count)</h3>
+    <canvas id="pipelineChart"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h3>Business obtaining — target vs. achieved by division (Mn)</h3>
+    <canvas id="divisionChart"></canvas>
+  </div>
+</div>
+
+<div class="card" id="insightsCard">
+  <h3 style="margin:0 0 4px 0; font-size:14px; color:var(--muted); font-weight:600;">AI insights</h3>
+  <div id="insightsText" style="color:var(--muted);">Click "Generate AI insights" to get a short narrative summary of what's in the numbers above.</div>
+</div>
+
+<script>
+/* ====================== CONFIG — edit these for your sheet ====================== */
+const SHEET_ID = "1zTyfDGcHhU4A0D4M7wrZUGUfjziuBJV3iFNJLYAU3eg";
+const DASHBOARD_GID = "1798885989"; // the "Dashboard" tab
+// These ranges match the current layout of your Dashboard tab. If you add/remove
+// rows or columns in those tables, update the ranges below to match.
+const RANGES = {
+  qsSummary:  "B5:M12",   // SUMMARY BY QS table
+  pipeline:   "B15:D22",  // PIPELINE - ALL QS COMBINED table
+  divisions:  "F15:I22",  // DIVISION SUMMARY - BUSINESS OBTAINING table
+  executive:  "K15:N21",  // EXECUTIVE TARGET SUMMARY table
+};
+const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
+/* =================================================================================== */
+
+let charts = {};
+let lastData = null;
+
+function gvizUrl(range){
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${DASHBOARD_GID}&range=${range}&tqx=out:json`;
+}
+
+async function fetchRange(range){
+  const res = await fetch(gvizUrl(range));
+  const text = await res.text();
+  const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+  if (json.status === 'error') throw new Error(json.errors?.[0]?.detailed_message || 'Sheet read error');
+  return json.table.rows.map(r => (r.c || []).map(c => c ? { v: c.v, f: c.f } : { v: null, f: null }));
+}
+
+function num(cell){ return cell && typeof cell.v === 'number' ? cell.v : (cell && cell.v ? Number(cell.v) : 0); }
+function pct(cell){ // handles fraction (0.14) or already-percent numbers
+  if (!cell) return 0;
+  if (typeof cell.v === 'number') return cell.v <= 1 ? cell.v * 100 : cell.v;
+  return 0;
+}
+function txt(cell){ return cell && cell.v != null ? String(cell.v) : ''; }
+function mn(value){ return (value/1_000_000).toFixed(1); }
+
+async function loadAll(){
+  const btn = document.getElementById('refreshBtn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  status.textContent = 'Refreshing…';
+  try {
+    const [qs, pipeline, divisions, executive] = await Promise.all([
+      fetchRange(RANGES.qsSummary),
+      fetchRange(RANGES.pipeline),
+      fetchRange(RANGES.divisions),
+      fetchRange(RANGES.executive),
+    ]);
+
+    // ---- QS summary: header row0, data rows1..N-2, TOTAL row last ----
+    const qsRows = qs.slice(1, qs.length - 1).filter(r => txt(r[0]));
+    const qsNames   = qsRows.map(r => txt(r[0]));
+    const qsQuoted  = qsRows.map(r => num(r[5]) / 1_000_000);   // Total Quoted Value
+    const qsWon     = qsRows.map(r => num(r[6]) / 1_000_000);   // Won Projects Total Value
+    const qsWinRate = qsRows.map(r => pct(r[7]));               // Win Rate
+    const qsHitRate = qsRows.map(r => pct(r[8]));               // Hit Rate
+    const totalRow  = qs[qs.length - 1];
+
+    // ---- Pipeline: header row0, data rows1..end ----
+    const pipeRows = pipeline.slice(1).filter(r => txt(r[0]));
+    const pipeLabels = pipeRows.map(r => txt(r[0]));
+    const pipeCounts = pipeRows.map(r => num(r[1]));
+
+    // ---- Divisions: header row0, data rows1..N-2, total row last ----
+    const divRows = divisions.slice(1, divisions.length - 1).filter(r => txt(r[0]));
+    const divNames    = divRows.map(r => txt(r[0]));
+    const divTarget   = divRows.map(r => num(r[1]));
+    const divAchieved = divRows.map(r => num(r[2]));
+
+    // ---- Executive summary: fixed layout (see RANGES.executive comment) ----
+    // row0=header, row1=section label, row2=revenue data, row3=pipeline coverage,
+    // row4=section label, row5=GP data, row6=blended margin
+    const revenue   = executive[2] || [];
+    const pipeCov   = executive[3] || [];
+    const gp        = executive[5] || [];
+    const margin    = executive[6] || [];
+
+    lastData = { qsNames, qsQuoted, qsWon, qsWinRate, qsHitRate, totalRow,
+                 pipeLabels, pipeCounts, divNames, divTarget, divAchieved,
+                 revenue, pipeCov, gp, margin };
+
+    renderStatCards(lastData);
+    renderCharts(lastData);
+    status.textContent = 'Last updated ' + new Date().toLocaleTimeString();
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message + ' — check the sheet is shared as "Anyone with the link can view".';
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderStatCards(d){
+  const revTarget = num(d.revenue[0]), revWon = num(d.revenue[1]), revPct = pct(d.revenue[3]);
+  const gpTarget = num(d.gp[0]), gpWon = num(d.gp[1]), gpPct = pct(d.gp[3]);
+  const cov = txt(d.pipeCov[3]) || (pct(d.pipeCov[3]).toFixed(1)+'%');
+  const totalWon = num(d.totalRow[5]), totalLost = num(d.totalRow[6]);
+  const overallWinRate = txt(d.totalRow[8]) || '—';
+
+  const cards = [
+    { label:'Revenue: target vs won', value:`${mn(revWon*1e6? revWon: revWon)} / ${revTarget.toFixed(0)} Mn`, footer:`${revPct.toFixed(1)}% of target`, cls: revPct>=100?'good':(revPct<50?'bad':'') },
+    { label:'Gross profit: target vs won', value:`${gpWon.toFixed(1)} / ${gpTarget.toFixed(0)} Mn`, footer:`${gpPct.toFixed(1)}% of target`, cls: gpPct>=100?'good':(gpPct<50?'bad':'') },
+    { label:'Pipeline coverage vs target', value: cov, footer:'total open+won value ÷ target' },
+    { label:'Overall win rate', value: overallWinRate, footer:`${totalWon} won · ${totalLost} lost` },
+  ];
+  document.getElementById('statCards').innerHTML = cards.map(c => `
+    <div class="card stat">
+      <div class="label">${c.label}</div>
+      <div class="value">${c.value}</div>
+      <div class="footer">${c.footer}</div>
+    </div>`).join('');
+}
+
+function upsertChart(id, config){
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), config);
+}
+
+function renderCharts(d){
+  const gridColor = 'rgba(255,255,255,.06)';
+  const textColor = '#9aa3b2';
+  Chart.defaults.color = textColor;
+  Chart.defaults.borderColor = gridColor;
+
+  upsertChart('valueChart', {
+    type:'bar',
+    data:{ labels:d.qsNames, datasets:[
+      { label:'Quoted (Mn)', data:d.qsQuoted, backgroundColor:'#4f8cff' },
+      { label:'Won (Mn)', data:d.qsWon, backgroundColor:'#33c17a' },
+    ]},
+    options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+  });
+
+  upsertChart('rateChart', {
+    type:'bar',
+    data:{ labels:d.qsNames, datasets:[
+      { label:'Win rate %', data:d.qsWinRate, backgroundColor:'#e6b422' },
+      { label:'Hit rate %', data:d.qsHitRate, backgroundColor:'#4f8cff' },
+    ]},
+    options:{ responsive:true, scales:{ y:{ beginAtZero:true, max:100 } } }
+  });
+
+  upsertChart('pipelineChart', {
+    type:'doughnut',
+    data:{ labels:d.pipeLabels, datasets:[{ data:d.pipeCounts,
+      backgroundColor:['#4f8cff','#e6b422','#33c17a','#e5534b','#9aa3b2','#8a5cf6','#22c1c3'] }]},
+    options:{ responsive:true }
+  });
+
+  upsertChart('divisionChart', {
+    type:'bar',
+    data:{ labels:d.divNames, datasets:[
+      { label:'Target (Mn)', data:d.divTarget, backgroundColor:'#9aa3b2' },
+      { label:'Achieved (Mn)', data:d.divAchieved, backgroundColor:'#4f8cff' },
+    ]},
+    options:{ responsive:true, indexAxis:'y', scales:{ x:{ beginAtZero:true } } }
+  });
+}
+
+async function getAIInsights(){
+  const btn = document.getElementById('aiBtn');
+  const out = document.getElementById('insightsText');
+  if (!lastData) { out.textContent = 'Load the dashboard data first.'; return; }
+  btn.disabled = true;
+  out.style.color = 'var(--muted)';
+  out.textContent = 'Thinking…';
+  try {
+    const res = await fetch('/.netlify/functions/ai-insights', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ summary: lastData })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || json.error || 'Request failed');
+    out.style.color = 'var(--text)';
+    out.textContent = json.insight;
+  } catch (err) {
+    out.textContent = 'Could not generate insights: ' + err.message + ' (check the GROQ_API_KEY environment variable is set in Netlify).';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+loadAll();
+setInterval(loadAll, REFRESH_MS);
+</script>
+</body>
+</html>
