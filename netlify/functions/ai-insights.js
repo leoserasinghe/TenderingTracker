@@ -28,7 +28,15 @@ exports.handler = async function (event) {
   const prompt = `You are a sales operations analyst reviewing a construction/MEP tendering pipeline.
 Given this JSON summary (values in LKR millions unless noted), write a concise executive briefing of
 150-200 words with three short sections: "Wins", "Risks", and "Recommendations". Be specific and use
-the actual numbers from the data. Do not invent numbers that aren't in the data.
+the actual numbers from the data.
+
+IMPORTANT: Do not calculate your own totals, sums, or averages from the per-QS arrays (qsQuoted,
+qsWon, qsWinRate, qsHitRate) — you are prone to arithmetic errors when summing raw numbers. For any
+grand total or overall figure (total quoted value, total won value, overall win rate, etc.), use the
+"totalRow" field, which already contains the correct precomputed totals from the spreadsheet, in the
+same column order as the qsSummary table (Total Projects, Active, Submitted, Won, Lost, Total Quoted
+Value, Won Value, Win Rate, Hit Rate, Sales Funnel Achievement, Business Obtaining). Do not invent
+numbers that aren't in the data.
 
 DATA:
 ${JSON.stringify(summary, null, 2)}`;
