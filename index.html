@@ -3,80 +3,202 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tendering Tracker — Live Dashboard</title>
+<title>Tendering Tracker — GA Division</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#0f1115; --panel:#171a21; --panel2:#1e222c; --border:#2a2f3a;
-    --text:#e8eaed; --muted:#9aa3b2; --accent:#4f8cff; --good:#33c17a;
-    --bad:#e5534b; --warn:#e6b422;
+    --bg:#0a1620; --bg2:#0d1f2e; --panel:#0f2436; --panel2:#122a3f;
+    --border:#1d3b52; --border-soft:#16304680;
+    --text:#e9f1f7; --muted:#7e97ab; --faint:#4d6478;
+    --accent:#ff7a45; --accent-soft:#ff7a4522; --cyan:#4fc6de; --cyan-soft:#4fc6de22;
+    --good:#3ddc84; --bad:#ff5470; --warn:#ffc857;
   }
   *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
   body{
-    margin:0; background:var(--bg); color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    padding:24px;
+    margin:0; color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, #123049 0%, transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, #0f2a3d 0%, transparent 55%),
+      repeating-linear-gradient(0deg, var(--bg2) 0px, var(--bg2) 39px, #ffffff08 39px, #ffffff08 40px),
+      repeating-linear-gradient(90deg, var(--bg2) 0px, var(--bg2) 39px, #ffffff08 39px, #ffffff08 40px),
+      var(--bg);
+    padding:28px 28px 60px;
+    min-height:100vh;
   }
-  h1{font-size:22px; margin:0 0 2px 0;}
-  .sub{color:var(--muted); font-size:13px; margin-bottom:20px;}
-  .toolbar{display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;}
+  .headline{
+    font-family:'Space Grotesk',sans-serif;
+  }
+  /* ---------- header ---------- */
+  header{
+    display:flex; justify-content:space-between; align-items:flex-end; gap:24px;
+    flex-wrap:wrap; margin-bottom:22px; padding-bottom:18px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .brand h1{
+    font-size:26px; font-weight:700; margin:0; letter-spacing:-0.02em;
+  }
+  .brand .sub{color:var(--muted); font-size:13.5px; margin-top:6px; max-width:46ch;}
+
+  .titleblock{
+    display:grid; grid-template-columns:auto auto; gap:2px 18px;
+    font-family:'Space Grotesk',sans-serif; font-size:11px; letter-spacing:.06em;
+    border:1px solid var(--border); border-radius:4px; padding:12px 16px;
+    background:var(--panel2); position:relative; min-width:230px;
+  }
+  .titleblock::before, .titleblock::after,
+  .plate::before, .plate::after{
+    content:''; position:absolute; width:10px; height:10px;
+    border-color:var(--faint); border-style:solid; border-width:0;
+  }
+  .titleblock::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
+  .titleblock::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
+  .titleblock dt{color:var(--faint); text-transform:uppercase;}
+  .titleblock dd{margin:0; color:var(--text); text-align:right; text-transform:uppercase;}
+  .titleblock .live-row dd{color:var(--accent); display:flex; align-items:center; gap:6px; justify-content:flex-end;}
+  .live-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 0 0 var(--accent-soft);
+    animation:pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 #ff7a4560; }
+    70%{ box-shadow:0 0 0 8px #ff7a4500; }
+    100%{ box-shadow:0 0 0 0 #ff7a4500; }
+  }
+
+  /* ---------- toolbar ---------- */
+  .toolbar{display:flex; align-items:center; gap:12px; margin-bottom:26px; flex-wrap:wrap;}
   button{
-    background:var(--accent); color:#fff; border:none; padding:9px 16px;
-    border-radius:8px; font-size:13px; cursor:pointer; font-weight:600;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px;
+    letter-spacing:.02em; border-radius:6px; padding:10px 18px; cursor:pointer;
+    border:1px solid transparent; transition:transform .12s ease, box-shadow .12s ease;
   }
-  button:disabled{opacity:.5; cursor:default;}
-  button.secondary{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
-  #status{font-size:12px; color:var(--muted);}
-  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px;}
-  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);}}
-  .card{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px;}
-  .stat .label{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em;}
-  .stat .value{font-size:26px; font-weight:700; margin-top:6px;}
-  .stat .footer{font-size:12px; color:var(--muted); margin-top:4px;}
-  .charts{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-  @media(max-width:900px){.charts{grid-template-columns:1fr;}}
-  .chart-card h3{margin:0 0 12px 0; font-size:14px; color:var(--muted); font-weight:600;}
+  button:active{ transform:translateY(1px); }
+  button:disabled{ opacity:.5; cursor:default; transform:none; }
+  #refreshBtn{ background:var(--accent); color:#1a0d05; box-shadow:0 0 0 0 var(--accent-soft); }
+  #refreshBtn:hover:not(:disabled){ box-shadow:0 0 20px -4px #ff7a4570; }
+  #aiBtn{ background:transparent; color:var(--cyan); border-color:var(--cyan); }
+  #aiBtn:hover:not(:disabled){ background:var(--cyan-soft); }
+  #status{font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- stat plates ---------- */
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px;}
+  @media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr;}}
+
+  .plate{
+    background:linear-gradient(180deg, var(--panel), var(--panel2));
+    border:1px solid var(--border); border-radius:6px; padding:18px 18px 16px;
+    position:relative;
+  }
+  .plate::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
+  .plate::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
+  .plate.enter{ opacity:0; transform:translateY(10px); animation:riseIn .5s cubic-bezier(.2,.8,.2,1) forwards; }
+  .plate.flash{ animation:flash 1s ease-out; }
+  @keyframes riseIn{ to{ opacity:1; transform:translateY(0); } }
+  @keyframes flash{ 0%{ box-shadow:0 0 0 1px var(--cyan-soft), 0 0 24px -4px var(--cyan-soft);} 100%{ box-shadow:none; } }
+
+  .plate .label{
+    color:var(--faint); font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    font-family:'Space Grotesk',sans-serif; font-weight:600;
+  }
+  .plate .value{
+    font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600;
+    margin-top:10px; letter-spacing:-.01em; font-variant-numeric:tabular-nums;
+  }
+  .plate .footer{ font-size:12px; color:var(--muted); margin-top:6px; }
+
+  /* ---------- charts ---------- */
+  .charts{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:22px;}
+  @media(max-width:980px){.charts{grid-template-columns:1fr;}}
+  .chart-card{
+    background:linear-gradient(180deg, var(--panel), var(--panel2));
+    border:1px solid var(--border); border-radius:6px; padding:18px;
+    opacity:0; transform:translateY(10px); animation:riseIn .55s cubic-bezier(.2,.8,.2,1) forwards;
+    transition:border-color .2s ease;
+  }
+  .chart-card:hover{ border-color:#2c5170; }
+  .chart-card h3{
+    margin:0 0 14px 0; font-size:13px; font-weight:600; color:var(--muted);
+    font-family:'Space Grotesk',sans-serif; letter-spacing:.02em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .chart-card h3::before{ content:''; width:4px; height:14px; background:var(--accent); border-radius:1px; display:inline-block; }
   canvas{max-height:280px;}
-  #insightsCard{margin-top:16px;}
-  #insightsText{white-space:pre-wrap; line-height:1.5; font-size:14px; margin-top:10px;}
-  a{color:var(--accent);}
+
+  /* ---------- insights ---------- */
+  #insightsCard{
+    background:linear-gradient(180deg, var(--panel), var(--panel2));
+    border:1px solid var(--border); border-radius:6px; padding:20px;
+    opacity:0; transform:translateY(10px); animation:riseIn .6s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  #insightsCard h3{
+    margin:0 0 4px 0; font-size:13px; color:var(--muted); font-weight:600;
+    font-family:'Space Grotesk',sans-serif; letter-spacing:.02em;
+    display:flex; align-items:center; gap:8px;
+  }
+  #insightsCard h3::before{ content:''; width:4px; height:14px; background:var(--cyan); border-radius:1px; display:inline-block; }
+  #insightsText{ white-space:pre-wrap; line-height:1.6; font-size:14.5px; margin-top:12px; }
+  #insightsText .cursor{ display:inline-block; width:8px; height:16px; background:var(--cyan); vertical-align:middle; margin-left:2px; animation:blink 1s step-end infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important; }
+  }
 </style>
 </head>
 <body>
 
-<h1>Tendering Tracker — Live Dashboard</h1>
-<div class="sub">Reads live from the "Dashboard" tab of your Google Sheet. The sheet itself is untouched — this only reads it.</div>
+<header>
+  <div class="brand">
+    <h1 class="headline">Tendering Tracker</h1>
+    <div class="sub">Live sales pipeline for Hayleys Fentons PFP &amp; MEP — reads straight from the team's Google Sheet, which stays untouched.</div>
+  </div>
+  <dl class="titleblock">
+    <dt>Division</dt><dd>GA</dd>
+    <dt>Document</dt><dd>Tendering&nbsp;Tracker</dd>
+    <dt>Source</dt><dd>Google&nbsp;Sheets</dd>
+    <div class="live-row" style="display:contents;">
+      <dt>Status</dt><dd><span class="live-dot"></span>Live</dd>
+    </div>
+  </dl>
+</header>
 
 <div class="toolbar">
   <button id="refreshBtn" onclick="loadAll()">↻ Refresh now</button>
-  <button id="aiBtn" class="secondary" onclick="getAIInsights()">✨ Generate AI insights</button>
-  <span id="status">Loading…</span>
+  <button id="aiBtn" onclick="getAIInsights()">✨ Generate AI insights</button>
+  <span id="status">initializing…</span>
 </div>
 
 <div class="grid" id="statCards"></div>
 
 <div class="charts">
-  <div class="card chart-card">
-    <h3>Quoted vs. Won value by QS (LKR, Mn)</h3>
+  <div class="chart-card" style="animation-delay:.05s">
+    <h3>Quoted vs. won value by QS (LKR, Mn)</h3>
     <canvas id="valueChart"></canvas>
   </div>
-  <div class="card chart-card">
+  <div class="chart-card" style="animation-delay:.1s">
     <h3>Win rate vs. hit rate by QS</h3>
     <canvas id="rateChart"></canvas>
   </div>
-  <div class="card chart-card">
+  <div class="chart-card" style="animation-delay:.15s">
     <h3>Pipeline by status (count)</h3>
     <canvas id="pipelineChart"></canvas>
   </div>
-  <div class="card chart-card">
+  <div class="chart-card" style="animation-delay:.2s">
     <h3>Business obtaining — target vs. achieved by division (Mn)</h3>
     <canvas id="divisionChart"></canvas>
   </div>
 </div>
 
-<div class="card" id="insightsCard">
-  <h3 style="margin:0 0 4px 0; font-size:14px; color:var(--muted); font-weight:600;">AI insights</h3>
-  <div id="insightsText" style="color:var(--muted);">Click "Generate AI insights" to get a short narrative summary of what's in the numbers above.</div>
+<div id="insightsCard" style="animation-delay:.25s">
+  <h3>AI insights</h3>
+  <div id="insightsText" style="color:var(--muted);">Click "Generate AI insights" for a short written briefing on the numbers above.</div>
 </div>
 
 <script>
@@ -90,10 +212,12 @@ const RANGES = {
   executive:  "K15:N21",  // EXECUTIVE TARGET SUMMARY table
 };
 const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* =================================================================================== */
 
 let charts = {};
 let lastData = null;
+let firstLoad = true;
 
 function gvizUrl(range){
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${DASHBOARD_GID}&range=${range}&tqx=out:json`;
@@ -136,7 +260,7 @@ async function loadAll(){
   const btn = document.getElementById('refreshBtn');
   const status = document.getElementById('status');
   btn.disabled = true;
-  status.textContent = 'Refreshing…';
+  status.textContent = 'refreshing…';
   try {
     const [qs, pipeline, divisions, executive] = await Promise.all([
       fetchRange(RANGES.qsSummary),
@@ -175,8 +299,8 @@ async function loadAll(){
     // by their own label text, which IS still present in the returned rows.
     const findRow = (matchText) => executive.find(r => r.some(cell => txt(cell).toLowerCase().includes(matchText))) || null;
     const numericRows = executive.filter(r => isNum(r[0]));
-    const revenue = numericRows[0] || [{},{},{},{}]; // first numeric row = revenue target/won/balance/%
-    const gp      = numericRows[1] || [{},{},{},{}]; // second numeric row = gross profit target/won/balance/%
+    const revenue = numericRows[0] || [{},{},{},{}];
+    const gp      = numericRows[1] || [{},{},{},{}];
     const pipeCovRow = findRow('coverage') || [{},{},{},{}];
     const marginRow  = findRow('margin') || [{},{},{},{}];
 
@@ -186,9 +310,10 @@ async function loadAll(){
 
     renderStatCards(lastData);
     renderCharts(lastData);
-    status.textContent = 'Last updated ' + new Date().toLocaleTimeString();
+    status.textContent = 'synced ' + new Date().toLocaleTimeString();
+    firstLoad = false;
   } catch (err) {
-    status.textContent = 'Error: ' + err.message + ' — check the sheet is shared as "Anyone with the link can view".';
+    status.textContent = 'error — check sheet is shared as "anyone with the link"';
     console.error(err);
   } finally {
     btn.disabled = false;
@@ -204,12 +329,7 @@ function renderStatCards(d){
   const overallWinRateDisplay = fmt(d.totalRow[8]) || '—';
   const overallWinRateFrac = pct(d.totalRow[8]) / 100;
 
-  // Raw ratio: every deal ever quoted (won+lost+open) vs target — kept only as a
-  // reference figure, since it overstates what's realistically achievable.
   const rawMultiple = revTarget > 0 ? (totalQuotedMn / revTarget) : 0;
-
-  // Weighted: money already won, plus still-open pipeline discounted by the
-  // actual win rate. Lost/cancelled deals contribute nothing.
   const openStatuses = ['Submitted', 'Under Review', 'Quoting', 'On Hold'];
   const openValueMn = d.pipeLabels.reduce((sum, label, i) =>
     openStatuses.includes(label) ? sum + d.pipeValues[i] : sum, 0);
@@ -222,8 +342,11 @@ function renderStatCards(d){
     { label:'Weighted pipeline (win-rate adj.)', value:`${weightedPct.toFixed(0)}%`, footer:`raw pipeline is ${rawMultiple.toFixed(1)}× target (unweighted)` },
     { label:'Overall win rate', value: overallWinRateDisplay, footer:`${totalWon} won · ${totalLost} lost` },
   ];
-  document.getElementById('statCards').innerHTML = cards.map(c => `
-    <div class="card stat">
+
+  const grid = document.getElementById('statCards');
+  const isFirst = firstLoad || grid.children.length === 0;
+  grid.innerHTML = cards.map((c,i) => `
+    <div class="plate${isFirst ? ' enter' : ' flash'}" style="animation-delay:${isFirst ? (i*0.07)+'s' : '0s'}">
       <div class="label">${c.label}</div>
       <div class="value">${c.value}</div>
       <div class="footer">${c.footer}</div>
@@ -236,44 +359,62 @@ function upsertChart(id, config){
 }
 
 function renderCharts(d){
-  const gridColor = 'rgba(255,255,255,.06)';
-  const textColor = '#9aa3b2';
-  Chart.defaults.color = textColor;
-  Chart.defaults.borderColor = gridColor;
+  Chart.defaults.color = '#7e97ab';
+  Chart.defaults.borderColor = 'rgba(255,255,255,.06)';
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  const animDuration = REDUCED_MOTION ? 0 : 900;
 
   upsertChart('valueChart', {
     type:'bar',
     data:{ labels:d.qsNames, datasets:[
-      { label:'Quoted (Mn)', data:d.qsQuoted, backgroundColor:'#4f8cff' },
-      { label:'Won (Mn)', data:d.qsWon, backgroundColor:'#33c17a' },
+      { label:'Quoted (Mn)', data:d.qsQuoted, backgroundColor:'#4fc6de', borderRadius:3 },
+      { label:'Won (Mn)', data:d.qsWon, backgroundColor:'#ff7a45', borderRadius:3 },
     ]},
-    options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+    options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, scales:{ y:{ beginAtZero:true } } }
   });
 
   upsertChart('rateChart', {
     type:'bar',
     data:{ labels:d.qsNames, datasets:[
-      { label:'Win rate %', data:d.qsWinRate, backgroundColor:'#e6b422' },
-      { label:'Hit rate %', data:d.qsHitRate, backgroundColor:'#4f8cff' },
+      { label:'Win rate %', data:d.qsWinRate, backgroundColor:'#ffc857', borderRadius:3 },
+      { label:'Hit rate %', data:d.qsHitRate, backgroundColor:'#4fc6de', borderRadius:3 },
     ]},
-    options:{ responsive:true, scales:{ y:{ beginAtZero:true, max:100 } } }
+    options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, scales:{ y:{ beginAtZero:true, max:100 } } }
   });
 
   upsertChart('pipelineChart', {
     type:'doughnut',
     data:{ labels:d.pipeLabels, datasets:[{ data:d.pipeCounts,
-      backgroundColor:['#4f8cff','#e6b422','#33c17a','#e5534b','#9aa3b2','#8a5cf6','#22c1c3'] }]},
-    options:{ responsive:true }
+      backgroundColor:['#4fc6de','#ffc857','#3ddc84','#ff5470','#7e97ab','#ff7a45','#8a7bf7'],
+      borderColor:'#0f2436', borderWidth:2 }]},
+    options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' } }
   });
 
   upsertChart('divisionChart', {
     type:'bar',
     data:{ labels:d.divNames, datasets:[
-      { label:'Target (Mn)', data:d.divTarget, backgroundColor:'#9aa3b2' },
-      { label:'Achieved (Mn)', data:d.divAchieved, backgroundColor:'#4f8cff' },
+      { label:'Target (Mn)', data:d.divTarget, backgroundColor:'#28425a', borderRadius:3 },
+      { label:'Achieved (Mn)', data:d.divAchieved, backgroundColor:'#ff7a45', borderRadius:3 },
     ]},
-    options:{ responsive:true, indexAxis:'y', scales:{ x:{ beginAtZero:true } } }
+    options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, indexAxis:'y', scales:{ x:{ beginAtZero:true } } }
   });
+}
+
+function typewrite(el, text){
+  if (REDUCED_MOTION) { el.textContent = text; return; }
+  el.innerHTML = '';
+  let i = 0;
+  const speed = Math.max(4, Math.min(18, 2400 / text.length));
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  const step = () => {
+    el.textContent = text.slice(0, i);
+    el.appendChild(cursor);
+    i++;
+    if (i <= text.length) setTimeout(step, speed);
+    else cursor.remove();
+  };
+  step();
 }
 
 async function getAIInsights(){
@@ -292,8 +433,9 @@ async function getAIInsights(){
     const json = await res.json();
     if (!res.ok) throw new Error(json.error?.message || json.error || 'Request failed');
     out.style.color = 'var(--text)';
-    out.textContent = json.insight;
+    typewrite(out, json.insight);
   } catch (err) {
+    out.style.color = 'var(--bad)';
     out.textContent = 'Could not generate insights: ' + err.message + ' (check the GROQ_API_KEY environment variable is set in Netlify).';
   } finally {
     btn.disabled = false;
