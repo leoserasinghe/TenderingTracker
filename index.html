@@ -107,11 +107,22 @@ async function fetchRange(range){
   return json.table.rows.map(r => (r.c || []).map(c => c ? { v: c.v, f: c.f } : { v: null, f: null }));
 }
 
-function num(cell){ return cell && typeof cell.v === 'number' ? cell.v : (cell && cell.v ? Number(cell.v) : 0); }
-function pct(cell){ // handles fraction (0.14) or already-percent numbers
-  if (!cell) return 0;
-  if (typeof cell.v === 'number') return cell.v <= 1 ? cell.v * 100 : cell.v;
-  return 0;
+function toNumber(v){
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') {
+    const cleaned = v.replace(/,/g, '').replace('%', '').trim();
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? null : n;
+  }
+  return null;
+}
+function num(cell){ const n = cell ? toNumber(cell.v) : null; return n == null ? 0 : n; }
+function pct(cell){ // handles fraction (0.14), already-percent numbers, or formatted strings like "61.2%"
+  if (!cell || cell.v == null) return 0;
+  const n = toNumber(cell.v);
+  if (n == null) return 0;
+  if (typeof cell.v === 'string' && cell.v.includes('%')) return n; // already a percent value
+  return n <= 1 ? n * 100 : n;
 }
 function txt(cell){ return cell && cell.v != null ? String(cell.v) : ''; }
 function fmt(cell){ // prefer Google's own display string (keeps %, commas etc. intact)
@@ -119,7 +130,7 @@ function fmt(cell){ // prefer Google's own display string (keeps %, commas etc. 
   if (cell.f != null) return cell.f;
   return cell.v != null ? String(cell.v) : '';
 }
-function isNum(cell){ return !!cell && typeof cell.v === 'number'; }
+function isNum(cell){ return !!cell && toNumber(cell.v) != null; }
 
 async function loadAll(){
   const btn = document.getElementById('refreshBtn');
