@@ -38,6 +38,11 @@ same column order as the qsSummary table (Total Projects, Active, Submitted, Won
 Value, Won Value, Win Rate, Hit Rate, Sales Funnel Achievement, Business Obtaining). Do not invent
 numbers that aren't in the data.
 
+Never mention field names, variable names, array indices, or any part of the JSON's internal
+structure in your output (e.g. do not write things like "totalRow", "pipeValues[1]", "(qsWon)").
+Write purely in plain business language, as if explaining the numbers to a sales manager who has
+never seen the underlying spreadsheet or data model.
+
 DATA:
 ${JSON.stringify(summary, null, 2)}`;
 
