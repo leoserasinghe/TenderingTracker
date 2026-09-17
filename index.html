@@ -157,9 +157,19 @@
     display:flex; align-items:center; gap:8px;
   }
   #insightsCard h3::before{ content:''; width:4px; height:14px; background:var(--cyan); border-radius:1px; display:inline-block; }
-  #insightsText{ white-space:pre-wrap; line-height:1.6; font-size:14.5px; margin-top:12px; }
-  #insightsText .cursor{ display:inline-block; width:8px; height:16px; background:var(--cyan); vertical-align:middle; margin-left:2px; animation:blink 1s step-end infinite; }
-  @keyframes blink{ 50%{ opacity:0; } }
+  #insightsText{ line-height:1.6; font-size:14.5px; margin-top:14px; }
+  .insight-block{ margin-bottom:20px; opacity:0; transform:translateY(6px); }
+  .insight-block:last-child{ margin-bottom:0; }
+  .insight-block.reveal{ animation:riseIn .45s ease forwards; }
+  .insight-label{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12.5px;
+    text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px;
+  }
+  .insight-block p{ margin:0; color:var(--text); }
+  .insight-block ol{ margin:0; padding-left:22px; }
+  .insight-block li{ margin-bottom:8px; line-height:1.55; color:var(--text); }
+  .insight-block li::marker{ color:var(--accent); font-weight:600; }
+  .insight-block strong{ color:var(--text); font-weight:600; }
 
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important; }
@@ -173,7 +183,7 @@
     <img src="logo.png" alt="Hayleys Fentons" class="logo" />
     <div class="brand-text">
       <h1 class="headline">Tendering Tracker</h1>
-      <div class="sub">Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard</div>
+      <div class="sub">Hayleys Fentons : GA Division<br>Live Sales Pipeline Dashboard</div>
     </div>
   </div>
   <dl class="titleblock">
@@ -196,25 +206,25 @@
 
 <div class="charts">
   <div class="chart-card" style="animation-delay:.05s">
-    <h3>Quoted vs. won value by QS (LKR, Mn)</h3>
+    <h3>Quoted vs. Won Value by QS (LKR, Mn)</h3>
     <canvas id="valueChart"></canvas>
   </div>
   <div class="chart-card" style="animation-delay:.1s">
-    <h3>Win rate vs. hit rate by QS</h3>
+    <h3>Win Rate vs. Hit Rate by QS</h3>
     <canvas id="rateChart"></canvas>
   </div>
   <div class="chart-card" style="animation-delay:.15s">
-    <h3>Pipeline by status (count)</h3>
+    <h3>Pipeline by Status (Count)</h3>
     <canvas id="pipelineChart"></canvas>
   </div>
   <div class="chart-card" style="animation-delay:.2s">
-    <h3>Business obtaining — target vs. achieved by division (Mn)</h3>
+    <h3>Business Obtaining — Target vs. Achieved by Division (Mn)</h3>
     <canvas id="divisionChart"></canvas>
   </div>
 </div>
 
 <div id="insightsCard" style="animation-delay:.25s">
-  <h3>AI insights</h3>
+  <h3>AI Insights</h3>
   <div id="insightsText" style="color:var(--muted);">Click "Generate AI insights" for a short written briefing on the numbers above.</div>
 </div>
 
@@ -354,10 +364,10 @@ function renderStatCards(d){
   const weightedPct = revTarget > 0 ? (expectedTotalMn / revTarget) * 100 : 0;
 
   const cards = [
-    { label:'Revenue: target vs won', value:`${revWon.toFixed(1)} / ${revTarget.toFixed(0)} Mn`, footer:`${revPct.toFixed(1)}% of target` },
-    { label:'Gross profit: target vs won', value:`${gpWon.toFixed(1)} / ${gpTarget.toFixed(0)} Mn`, footer:`${gpPct.toFixed(1)}% of target` },
-    { label:'Weighted pipeline (win-rate adj.)', value:`${weightedPct.toFixed(0)}%`, footer:`raw pipeline is ${rawMultiple.toFixed(1)}× target (unweighted)` },
-    { label:'Overall win rate', value: overallWinRateDisplay, footer:`${totalWon} won · ${totalLost} lost` },
+    { label:'Revenue: Target vs Won', value:`${revWon.toFixed(1)} / ${revTarget.toFixed(0)} Mn`, footer:`${revPct.toFixed(1)}% of target` },
+    { label:'Gross Profit: Target vs Won', value:`${gpWon.toFixed(1)} / ${gpTarget.toFixed(0)} Mn`, footer:`${gpPct.toFixed(1)}% of target` },
+    { label:'Weighted Pipeline (Win-Rate Adj.)', value:`${weightedPct.toFixed(0)}%`, footer:`raw pipeline is ${rawMultiple.toFixed(1)}× target (unweighted)` },
+    { label:'Overall Win Rate', value: overallWinRateDisplay, footer:`${totalWon} won · ${totalLost} lost` },
   ];
 
   const grid = document.getElementById('statCards');
@@ -393,8 +403,8 @@ function renderCharts(d){
   upsertChart('rateChart', {
     type:'bar',
     data:{ labels:d.qsNames, datasets:[
-      { label:'Win rate %', data:d.qsWinRate, backgroundColor:'#ffc857', borderRadius:3 },
-      { label:'Hit rate %', data:d.qsHitRate, backgroundColor:'#4fc6de', borderRadius:3 },
+      { label:'Win Rate %', data:d.qsWinRate, backgroundColor:'#ffc857', borderRadius:3 },
+      { label:'Hit Rate %', data:d.qsHitRate, backgroundColor:'#4fc6de', borderRadius:3 },
     ]},
     options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, scales:{ y:{ beginAtZero:true, max:100 } } }
   });
@@ -417,21 +427,35 @@ function renderCharts(d){
   });
 }
 
-function typewrite(el, text){
-  if (REDUCED_MOTION) { el.textContent = text; return; }
-  el.innerHTML = '';
-  let i = 0;
-  const speed = Math.max(4, Math.min(18, 2400 / text.length));
-  const cursor = document.createElement('span');
-  cursor.className = 'cursor';
-  const step = () => {
-    el.textContent = text.slice(0, i);
-    el.appendChild(cursor);
-    i++;
-    if (i <= text.length) setTimeout(step, speed);
-    else cursor.remove();
-  };
-  step();
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function inlineFormat(s){
+  return escapeHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+function formatInsight(raw){
+  const labelColors = { wins:'var(--good)', risks:'var(--bad)', recommendations:'var(--cyan)' };
+  const blocks = raw.trim().split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  return blocks.map(block => {
+    const headerMatch = block.match(/^\*\*(.+?)\*\*\s*:?\s*\n?([\s\S]*)$/);
+    const label = headerMatch ? headerMatch[1].trim() : null;
+    const body = (headerMatch ? headerMatch[2] : block).trim();
+    const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
+    const isList = lines.length > 0 && lines.every(l => /^\d+[\.\)]\s/.test(l));
+    const bodyHtml = isList
+      ? '<ol>' + lines.map(l => '<li>' + inlineFormat(l.replace(/^\d+[\.\)]\s*/, '')) + '</li>').join('') + '</ol>'
+      : '<p>' + inlineFormat(body).replace(/\n/g, '<br>') + '</p>';
+    const color = label ? (labelColors[label.toLowerCase()] || 'var(--cyan)') : null;
+    return `<div class="insight-block">${label ? `<div class="insight-label" style="color:${color}">${escapeHtml(label)}</div>` : ''}${bodyHtml}</div>`;
+  }).join('');
+}
+function revealInsight(el, html){
+  el.innerHTML = html;
+  const blocks = el.querySelectorAll('.insight-block');
+  blocks.forEach((b, i) => {
+    b.style.animationDelay = REDUCED_MOTION ? '0s' : (i * 0.12) + 's';
+    requestAnimationFrame(() => b.classList.add('reveal'));
+  });
 }
 
 async function getAIInsights(){
@@ -449,8 +473,8 @@ async function getAIInsights(){
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error?.message || json.error || 'Request failed');
-    out.style.color = 'var(--text)';
-    typewrite(out, json.insight);
+    out.style.color = '';
+    revealInsight(out, formatInsight(json.insight));
   } catch (err) {
     out.style.color = 'var(--bad)';
     out.textContent = 'Could not generate insights: ' + err.message + ' (check the GROQ_API_KEY environment variable is set in Netlify).';
