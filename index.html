@@ -39,9 +39,6 @@
   canvas{max-height:280px;}
   #insightsCard{margin-top:16px;}
   #insightsText{white-space:pre-wrap; line-height:1.5; font-size:14px; margin-top:10px;}
-  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;}
-  .pill.good{background:rgba(51,193,122,.15); color:var(--good);}
-  .pill.bad{background:rgba(229,83,75,.15); color:var(--bad);}
   a{color:var(--accent);}
 </style>
 </head>
@@ -86,8 +83,6 @@
 /* ====================== CONFIG — edit these for your sheet ====================== */
 const SHEET_ID = "1zTyfDGcHhU4A0D4M7wrZUGUfjziuBJV3iFNJLYAU3eg";
 const DASHBOARD_GID = "1798885989"; // the "Dashboard" tab
-// These ranges match the current layout of your Dashboard tab. If you add/remove
-// rows or columns in those tables, update the ranges below to match.
 const RANGES = {
   qsSummary:  "B5:M12",   // SUMMARY BY QS table
   pipeline:   "B15:D22",  // PIPELINE - ALL QS COMBINED table
@@ -119,7 +114,12 @@ function pct(cell){ // handles fraction (0.14) or already-percent numbers
   return 0;
 }
 function txt(cell){ return cell && cell.v != null ? String(cell.v) : ''; }
-function mn(value){ return (value/1_000_000).toFixed(1); }
+function fmt(cell){ // prefer Google's own display string (keeps %, commas etc. intact)
+  if (!cell) return '';
+  if (cell.f != null) return cell.f;
+  return cell.v != null ? String(cell.v) : '';
+}
+function isNum(cell){ return !!cell && typeof cell.v === 'number'; }
 
 async function loadAll(){
   const btn = document.getElementById('refreshBtn');
@@ -134,37 +134,40 @@ async function loadAll(){
       fetchRange(RANGES.executive),
     ]);
 
-    // ---- QS summary: header row0, data rows1..N-2, TOTAL row last ----
+    // ---- QS summary columns (B:M), 0-indexed:
+    // 0 Name, 1 TotalProjects, 2 Active, 3 Submitted, 4 Won, 5 Lost,
+    // 6 TotalQuotedValue, 7 WonValue, 8 WinRate, 9 HitRate, 10 SalesFunnel, 11 BusinessObtaining
     const qsRows = qs.slice(1, qs.length - 1).filter(r => txt(r[0]));
     const qsNames   = qsRows.map(r => txt(r[0]));
-    const qsQuoted  = qsRows.map(r => num(r[5]) / 1_000_000);   // Total Quoted Value
-    const qsWon     = qsRows.map(r => num(r[6]) / 1_000_000);   // Won Projects Total Value
-    const qsWinRate = qsRows.map(r => pct(r[7]));               // Win Rate
-    const qsHitRate = qsRows.map(r => pct(r[8]));               // Hit Rate
-    const totalRow  = qs[qs.length - 1];
+    const qsQuoted  = qsRows.map(r => num(r[6]) / 1_000_000);
+    const qsWon     = qsRows.map(r => num(r[7]) / 1_000_000);
+    const qsWinRate = qsRows.map(r => pct(r[8]));
+    const qsHitRate = qsRows.map(r => pct(r[9]));
+    const totalRow  = qs[qs.length - 1]; // same column layout as above
 
-    // ---- Pipeline: header row0, data rows1..end ----
+    // ---- Pipeline: 0 Status, 1 Count, 2 Won Value ----
     const pipeRows = pipeline.slice(1).filter(r => txt(r[0]));
     const pipeLabels = pipeRows.map(r => txt(r[0]));
     const pipeCounts = pipeRows.map(r => num(r[1]));
 
-    // ---- Divisions: header row0, data rows1..N-2, total row last ----
+    // ---- Divisions: 0 Division, 1 Target, 2 Achieved, 3 Balance(text) ----
     const divRows = divisions.slice(1, divisions.length - 1).filter(r => txt(r[0]));
     const divNames    = divRows.map(r => txt(r[0]));
     const divTarget   = divRows.map(r => num(r[1]));
     const divAchieved = divRows.map(r => num(r[2]));
 
-    // ---- Executive summary: fixed layout (see RANGES.executive comment) ----
-    // row0=header, row1=section label, row2=revenue data, row3=pipeline coverage,
-    // row4=section label, row5=GP data, row6=blended margin
-    const revenue   = executive[2] || [];
-    const pipeCov   = executive[3] || [];
-    const gp        = executive[5] || [];
-    const margin    = executive[6] || [];
+    // ---- Executive summary: this block mixes section-header rows and data rows,
+    // so instead of trusting fixed row numbers, find rows by what's actually in them.
+    const findRow = (matchText) => executive.find(r => txt(r[0]).toLowerCase().includes(matchText)) || [{},{},{},{}];
+    const numericRows = executive.slice(1).filter(r => isNum(r[0])); // rows with an actual target number in col K
+    const revenue = numericRows[0] || [{},{},{},{}]; // first numeric row = revenue target/won/balance/%
+    const gp      = numericRows[1] || [{},{},{},{}]; // second numeric row = gross profit target/won/balance/%
+    const pipeCovRow = findRow('coverage');
+    const marginRow  = findRow('margin');
 
     lastData = { qsNames, qsQuoted, qsWon, qsWinRate, qsHitRate, totalRow,
                  pipeLabels, pipeCounts, divNames, divTarget, divAchieved,
-                 revenue, pipeCov, gp, margin };
+                 revenue, gp, pipeCov: pipeCovRow, margin: marginRow };
 
     renderStatCards(lastData);
     renderCharts(lastData);
@@ -180,13 +183,14 @@ async function loadAll(){
 function renderStatCards(d){
   const revTarget = num(d.revenue[0]), revWon = num(d.revenue[1]), revPct = pct(d.revenue[3]);
   const gpTarget = num(d.gp[0]), gpWon = num(d.gp[1]), gpPct = pct(d.gp[3]);
-  const cov = txt(d.pipeCov[3]) || (pct(d.pipeCov[3]).toFixed(1)+'%');
-  const totalWon = num(d.totalRow[5]), totalLost = num(d.totalRow[6]);
-  const overallWinRate = txt(d.totalRow[8]) || '—';
+  const cov = fmt(d.pipeCov[3]) || '—';
+  // totalRow uses the same 0-indexed column layout as qsRows above
+  const totalWon = num(d.totalRow[4]), totalLost = num(d.totalRow[5]);
+  const overallWinRate = fmt(d.totalRow[8]) || '—';
 
   const cards = [
-    { label:'Revenue: target vs won', value:`${mn(revWon*1e6? revWon: revWon)} / ${revTarget.toFixed(0)} Mn`, footer:`${revPct.toFixed(1)}% of target`, cls: revPct>=100?'good':(revPct<50?'bad':'') },
-    { label:'Gross profit: target vs won', value:`${gpWon.toFixed(1)} / ${gpTarget.toFixed(0)} Mn`, footer:`${gpPct.toFixed(1)}% of target`, cls: gpPct>=100?'good':(gpPct<50?'bad':'') },
+    { label:'Revenue: target vs won', value:`${revWon.toFixed(1)} / ${revTarget.toFixed(0)} Mn`, footer:`${revPct.toFixed(1)}% of target` },
+    { label:'Gross profit: target vs won', value:`${gpWon.toFixed(1)} / ${gpTarget.toFixed(0)} Mn`, footer:`${gpPct.toFixed(1)}% of target` },
     { label:'Pipeline coverage vs target', value: cov, footer:'total open+won value ÷ target' },
     { label:'Overall win rate', value: overallWinRate, footer:`${totalWon} won · ${totalLost} lost` },
   ];
