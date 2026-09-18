@@ -1,242 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard</title>
-<meta name="description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
-<meta property="og:type" content="website" />
-<meta property="og:title" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
-<meta property="og:description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
-<meta property="og:image" content="https://dulcet-puffpuff-958ab0.netlify.app/og-image.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://dulcet-puffpuff-958ab0.netlify.app/" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
-<meta name="twitter:description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
-<meta name="twitter:image" content="https://dulcet-puffpuff-958ab0.netlify.app/og-image.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<style>
-  :root{
-    --bg:#0a1620; --bg2:#0d1f2e; --panel:#0f2436; --panel2:#122a3f;
-    --border:#1d3b52; --border-soft:#16304680;
-    --text:#e9f1f7; --muted:#7e97ab; --faint:#4d6478;
-    --accent:#ff7a45; --accent-soft:#ff7a4522; --cyan:#4fc6de; --cyan-soft:#4fc6de22;
-    --good:#3ddc84; --bad:#ff5470; --warn:#ffc857;
-  }
-  *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
-  body{
-    margin:0; color:var(--text);
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-    background:
-      radial-gradient(ellipse 900px 500px at 15% -10%, #123049 0%, transparent 60%),
-      radial-gradient(ellipse 700px 500px at 100% 10%, #0f2a3d 0%, transparent 55%),
-      repeating-linear-gradient(0deg, var(--bg2) 0px, var(--bg2) 39px, #ffffff08 39px, #ffffff08 40px),
-      repeating-linear-gradient(90deg, var(--bg2) 0px, var(--bg2) 39px, #ffffff08 39px, #ffffff08 40px),
-      var(--bg);
-    padding:28px 28px 60px;
-    min-height:100vh;
-  }
-  .headline{
-    font-family:'Space Grotesk',sans-serif;
-  }
-  /* ---------- header ---------- */
-  header{
-    display:flex; justify-content:space-between; align-items:flex-end; gap:24px;
-    flex-wrap:wrap; margin-bottom:22px; padding-bottom:18px;
-    border-bottom:1px solid var(--border-soft);
-  }
-  .brand{ display:flex; align-items:center; gap:18px; }
-  .brand img.logo{ height:52px; width:auto; display:block; }
-  .brand .brand-text h1{
-    font-size:26px; font-weight:700; margin:0; letter-spacing:-0.02em;
-  }
-  .brand .sub{color:var(--muted); font-size:13.5px; margin-top:6px; max-width:46ch;}
-
-  .titleblock{
-    display:grid; grid-template-columns:auto auto; gap:2px 18px;
-    font-family:'Space Grotesk',sans-serif; font-size:11px; letter-spacing:.06em;
-    border:1px solid var(--border); border-radius:4px; padding:12px 16px;
-    background:var(--panel2); position:relative; min-width:230px;
-  }
-  .titleblock::before, .titleblock::after,
-  .plate::before, .plate::after{
-    content:''; position:absolute; width:10px; height:10px;
-    border-color:var(--faint); border-style:solid; border-width:0;
-  }
-  .titleblock::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
-  .titleblock::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
-  .titleblock dt{color:var(--faint); text-transform:uppercase;}
-  .titleblock dd{margin:0; color:var(--text); text-align:right; text-transform:uppercase;}
-  .titleblock .live-row dd{color:var(--accent); display:flex; align-items:center; gap:6px; justify-content:flex-end;}
-  .live-dot{
-    width:7px; height:7px; border-radius:50%; background:var(--accent);
-    box-shadow:0 0 0 0 var(--accent-soft);
-    animation:pulse 2.2s ease-out infinite;
-  }
-  @keyframes pulse{
-    0%{ box-shadow:0 0 0 0 #ff7a4560; }
-    70%{ box-shadow:0 0 0 8px #ff7a4500; }
-    100%{ box-shadow:0 0 0 0 #ff7a4500; }
-  }
-
-  /* ---------- toolbar ---------- */
-  .toolbar{display:flex; align-items:center; gap:12px; margin-bottom:26px; flex-wrap:wrap;}
-  button{
-    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px;
-    letter-spacing:.02em; border-radius:6px; padding:10px 18px; cursor:pointer;
-    border:1px solid transparent; transition:transform .12s ease, box-shadow .12s ease;
-  }
-  button:active{ transform:translateY(1px); }
-  button:disabled{ opacity:.5; cursor:default; transform:none; }
-  #refreshBtn{ background:var(--accent); color:#1a0d05; box-shadow:0 0 0 0 var(--accent-soft); }
-  #refreshBtn:hover:not(:disabled){ box-shadow:0 0 20px -4px #ff7a4570; }
-  #aiBtn{ background:transparent; color:var(--cyan); border-color:var(--cyan); }
-  #aiBtn:hover:not(:disabled){ background:var(--cyan-soft); }
-  #status{font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace;}
-
-  /* ---------- stat plates ---------- */
-  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px;}
-  @media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr);}}
-  @media(max-width:560px){.grid{grid-template-columns:1fr;}}
-
-  .plate{
-    background:linear-gradient(180deg, var(--panel), var(--panel2));
-    border:1px solid var(--border); border-radius:6px; padding:18px 18px 16px;
-    position:relative;
-  }
-  .plate::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
-  .plate::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
-  .plate.enter{ opacity:0; transform:translateY(10px); animation:riseIn .5s cubic-bezier(.2,.8,.2,1) forwards; }
-  .plate.flash{ animation:flash 1s ease-out; }
-  @keyframes riseIn{ to{ opacity:1; transform:translateY(0); } }
-  @keyframes flash{ 0%{ box-shadow:0 0 0 1px var(--cyan-soft), 0 0 24px -4px var(--cyan-soft);} 100%{ box-shadow:none; } }
-
-  .plate .label{
-    color:var(--faint); font-size:11px; text-transform:uppercase; letter-spacing:.08em;
-    font-family:'Space Grotesk',sans-serif; font-weight:600;
-  }
-  .plate .value{
-    font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600;
-    margin-top:10px; letter-spacing:-.01em; font-variant-numeric:tabular-nums;
-  }
-  .plate .footer{ font-size:12px; color:var(--muted); margin-top:6px; }
-
-  /* ---------- charts ---------- */
-  .charts{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:22px;}
-  @media(max-width:980px){.charts{grid-template-columns:1fr;}}
-  .chart-card{
-    background:linear-gradient(180deg, var(--panel), var(--panel2));
-    border:1px solid var(--border); border-radius:6px; padding:18px;
-    opacity:0; transform:translateY(10px); animation:riseIn .55s cubic-bezier(.2,.8,.2,1) forwards;
-    transition:border-color .2s ease;
-  }
-  .chart-card:hover{ border-color:#2c5170; }
-  .chart-card h3{
-    margin:0 0 14px 0; font-size:13px; font-weight:600; color:var(--muted);
-    font-family:'Space Grotesk',sans-serif; letter-spacing:.02em;
-    display:flex; align-items:center; gap:8px;
-  }
-  .chart-card h3::before{ content:''; width:4px; height:14px; background:var(--accent); border-radius:1px; display:inline-block; }
-  canvas{max-height:280px;}
-
-  /* ---------- insights ---------- */
-  #insightsCard{
-    background:linear-gradient(180deg, var(--panel), var(--panel2));
-    border:1px solid var(--border); border-radius:6px; padding:20px;
-    opacity:0; transform:translateY(10px); animation:riseIn .6s cubic-bezier(.2,.8,.2,1) forwards;
-  }
-  #insightsCard h3{
-    margin:0 0 4px 0; font-size:13px; color:var(--muted); font-weight:600;
-    font-family:'Space Grotesk',sans-serif; letter-spacing:.02em;
-    display:flex; align-items:center; gap:8px;
-  }
-  #insightsCard h3::before{ content:''; width:4px; height:14px; background:var(--cyan); border-radius:1px; display:inline-block; }
-  #insightsText{ line-height:1.6; font-size:14.5px; margin-top:14px; }
-  .insight-block{ margin-bottom:20px; opacity:0; transform:translateY(6px); }
-  .insight-block:last-child{ margin-bottom:0; }
-  .insight-block.reveal{ animation:riseIn .45s ease forwards; }
-  .insight-label{
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12.5px;
-    text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px;
-  }
-  .insight-block p{ margin:0; color:var(--text); }
-  .insight-block ol{ margin:0; padding-left:22px; }
-  .insight-block li{ margin-bottom:8px; line-height:1.55; color:var(--text); }
-  .insight-block li::marker{ color:var(--accent); font-weight:600; }
-  .insight-block strong{ color:var(--text); font-weight:600; }
-
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important; }
-  }
-</style>
-</head>
-<body>
-
-<header>
-  <div class="brand">
-    <img src="logo.png" alt="Hayleys Fentons" class="logo" />
-    <div class="brand-text">
-      <h1 class="headline">Tendering Tracker</h1>
-      <div class="sub">Hayleys Fentons : GA Division<br>Live Sales Pipeline Dashboard</div>
-    </div>
-  </div>
-  <dl class="titleblock">
-    <dt>Division</dt><dd>GA</dd>
-    <dt>Document</dt><dd>Tendering&nbsp;Tracker</dd>
-    <dt>Source</dt><dd>Google&nbsp;Sheets</dd>
-    <div class="live-row" style="display:contents;">
-      <dt>Status</dt><dd><span class="live-dot"></span>Live</dd>
-    </div>
-  </dl>
-</header>
-
-<div class="toolbar">
-  <button id="refreshBtn" onclick="loadAll()">↻ Refresh now</button>
-  <button id="aiBtn" onclick="getAIInsights()">✨ Generate AI insights</button>
-  <span id="status">initializing…</span>
-</div>
-
-<div class="grid" id="statCards"></div>
-
-<div class="charts">
-  <div class="chart-card" style="animation-delay:.05s">
-    <h3>Quoted vs. Won Value by QS (LKR, Mn)</h3>
-    <canvas id="valueChart"></canvas>
-  </div>
-  <div class="chart-card" style="animation-delay:.1s">
-    <h3>Win Rate vs. Hit Rate by QS</h3>
-    <canvas id="rateChart"></canvas>
-  </div>
-  <div class="chart-card" style="animation-delay:.15s">
-    <h3>Pipeline by Status (Count)</h3>
-    <canvas id="pipelineChart"></canvas>
-  </div>
-  <div class="chart-card" style="animation-delay:.2s">
-    <h3>Business Obtaining — Target vs. Achieved by Division (Mn)</h3>
-    <canvas id="divisionChart"></canvas>
-  </div>
-</div>
-
-<div id="insightsCard" style="animation-delay:.25s">
-  <h3>AI Insights</h3>
-  <div id="insightsText" style="color:var(--muted);">Click "Generate AI insights" for a short written briefing on the numbers above.</div>
-</div>
-
 <script>
 /* ====================== CONFIG — edit these for your sheet ====================== */
 const SHEET_ID = "1zTyfDGcHhU4A0D4M7wrZUGUfjziuBJV3iFNJLYAU3eg";
 const DASHBOARD_GID = "1798885989"; // the "Dashboard" tab
 const RANGES = {
-  qsSummary:  "B5:M12",   // SUMMARY BY QS table
-  pipeline:   "B15:D22",  // PIPELINE - ALL QS COMBINED table
-  divisions:  "F15:I22",  // DIVISION SUMMARY - BUSINESS OBTAINING table
-  executive:  "K15:N21",  // EXECUTIVE TARGET SUMMARY table
+qsSummary: "B5:M12", // SUMMARY BY QS table
+pipeline: "B15:D22", // PIPELINE - ALL QS COMBINED table
+divisions: "F15:I22", // DIVISION SUMMARY - BUSINESS OBTAINING table
+executive: "K15:N21", // EXECUTIVE TARGET SUMMARY table
 };
 const REFRESH_MS = 5 * 60 * 1000; // auto-refresh every 5 minutes
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -247,244 +17,246 @@ let lastData = null;
 let firstLoad = true;
 
 function gvizUrl(range){
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${DASHBOARD_GID}&range=${range}&tqx=out:json`;
+return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${DASHBOARD_GID}&range=${range}&tqx=out:json`;
 }
 
 async function fetchRange(range){
-  const res = await fetch(gvizUrl(range));
-  const text = await res.text();
-  const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
-  if (json.status === 'error') throw new Error(json.errors?.[0]?.detailed_message || 'Sheet read error');
-  return json.table.rows.map(r => (r.c || []).map(c => c ? { v: c.v, f: c.f } : { v: null, f: null }));
+const res = await fetch(gvizUrl(range));
+const text = await res.text();
+const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+if (json.status === 'error') throw new Error(json.errors?.[0]?.detailed_message || 'Sheet read error');
+return json.table.rows.map(r => (r.c || []).map(c => c ? { v: c.v, f: c.f } : { v: null, f: null }));
 }
 
 function toNumber(v){
-  if (typeof v === 'number') return v;
-  if (typeof v === 'string') {
-    const cleaned = v.replace(/,/g, '').replace('%', '').trim();
-    const n = parseFloat(cleaned);
-    return isNaN(n) ? null : n;
-  }
-  return null;
+if (typeof v === 'number') return v;
+if (typeof v === 'string') {
+const cleaned = v.replace(/,/g, '').replace('%', '').trim();
+const n = parseFloat(cleaned);
+return isNaN(n) ? null : n;
 }
+return null;
+}
+
 function num(cell){ const n = cell ? toNumber(cell.v) : null; return n == null ? 0 : n; }
 function pct(cell){ // handles fraction (0.14), already-percent numbers, or formatted strings like "61.2%"
-  if (!cell || cell.v == null) return 0;
-  const n = toNumber(cell.v);
-  if (n == null) return 0;
-  if (typeof cell.v === 'string' && cell.v.includes('%')) return n; // already a percent value
-  return n <= 1 ? n * 100 : n;
+if (!cell || cell.v == null) return 0;
+const n = toNumber(cell.v);
+if (n == null) return 0;
+if (typeof cell.v === 'string' && cell.v.includes('%')) return n; // already a percent value
+return n <= 1 ? n * 100 : n;
 }
 function txt(cell){ return cell && cell.v != null ? String(cell.v) : ''; }
 function fmt(cell){ // prefer Google's own display string (keeps %, commas etc. intact)
-  if (!cell) return '';
-  if (cell.f != null) return cell.f;
-  return cell.v != null ? String(cell.v) : '';
+if (!cell) return '';
+if (cell.f != null) return cell.f;
+return cell.v != null ? String(cell.v) : '';
 }
 function isNum(cell){ return !!cell && toNumber(cell.v) != null; }
 
 async function loadAll(){
-  const btn = document.getElementById('refreshBtn');
-  const status = document.getElementById('status');
-  btn.disabled = true;
-  status.textContent = 'refreshing…';
-  try {
-    const [qs, pipeline, divisions, executive] = await Promise.all([
-      fetchRange(RANGES.qsSummary),
-      fetchRange(RANGES.pipeline),
-      fetchRange(RANGES.divisions),
-      fetchRange(RANGES.executive),
-    ]);
+const btn = document.getElementById('refreshBtn');
+const status = document.getElementById('status');
+btn.disabled = true;
+status.textContent = 'refreshing…';
+try {
+const [qs, pipeline, divisions, executive] = await Promise.all([
+fetchRange(RANGES.qsSummary),
+fetchRange(RANGES.pipeline),
+fetchRange(RANGES.divisions),
+fetchRange(RANGES.executive),
+]);
 
-    // ---- QS summary columns (B:M), 0-indexed:
-    // 0 Name, 1 TotalProjects, 2 Active, 3 Submitted, 4 Won, 5 Lost,
-    // 6 TotalQuotedValue, 7 WonValue, 8 WinRate, 9 HitRate, 10 SalesFunnel, 11 BusinessObtaining
-    const qsRows = qs.slice(1, qs.length - 1).filter(r => txt(r[0]));
-    const qsNames   = qsRows.map(r => txt(r[0]));
-    const qsQuoted  = qsRows.map(r => num(r[6]) / 1_000_000);
-    const qsWon     = qsRows.map(r => num(r[7]) / 1_000_000);
-    const qsWinRate = qsRows.map(r => pct(r[8]));
-    const qsHitRate = qsRows.map(r => pct(r[9]));
-    const totalRow  = qs[qs.length - 1]; // same column layout as above
+// ---- QS summary columns (B:M), 0-indexed:
+// 0 Name, 1 TotalProjects, 2 Active, 3 Submitted, 4 Won, 5 Lost,
+// 6 TotalQuotedValue, 7 WonValue, 8 WinRate, 9 HitRate, 10 SalesFunnel, 11 BusinessObtaining
+// NOTE: Google's gviz API already strips the text header row on its own —
+// so we only need to drop the TOTAL row at the end, not slice(1) off the front too.
+const qsRows = qs.slice(0, qs.length - 1).filter(r => txt(r[0]));
+const qsNames = qsRows.map(r => txt(r[0]));
+const qsQuoted = qsRows.map(r => num(r[6]) / 1_000_000);
+const qsWon = qsRows.map(r => num(r[7]) / 1_000_000);
+const qsWinRate = qsRows.map(r => pct(r[8]));
+const qsHitRate = qsRows.map(r => pct(r[9]));
+const totalRow = qs[qs.length - 1]; // same column layout as above
 
-    // ---- Pipeline: 0 Status, 1 Count, 2 Won Value ----
-    const pipeRows = pipeline.slice(1).filter(r => txt(r[0]));
-    const pipeLabels = pipeRows.map(r => txt(r[0]));
-    const pipeCounts = pipeRows.map(r => num(r[1]));
-    const pipeValues = pipeRows.map(r => num(r[2]) / 1_000_000);
+// ---- Pipeline: 0 Status, 1 Count, 2 Won Value ----
+// Header row is already stripped by gviz, so no leading slice(1) here either.
+const pipeRows = pipeline.filter(r => txt(r[0]));
+const pipeLabels = pipeRows.map(r => txt(r[0]));
+const pipeCounts = pipeRows.map(r => num(r[1]));
+const pipeValues = pipeRows.map(r => num(r[2]) / 1_000_000);
 
-    // ---- Divisions: 0 Division, 1 Target, 2 Achieved, 3 Balance(text) ----
-    const divRows = divisions.slice(1, divisions.length - 1).filter(r => txt(r[0]));
-    const divNames    = divRows.map(r => txt(r[0]));
-    const divTarget   = divRows.map(r => num(r[1]));
-    const divAchieved = divRows.map(r => num(r[2]));
+// ---- Divisions: 0 Division, 1 Target, 2 Achieved, 3 Balance(text) ----
+const divRows = divisions.slice(0, divisions.length - 1).filter(r => txt(r[0]));
+const divNames = divRows.map(r => txt(r[0]));
+const divTarget = divRows.map(r => num(r[1]));
+const divAchieved = divRows.map(r => num(r[2]));
 
-    // ---- Executive summary: Google's API detects 2 header rows here (since the
-    // first two sheet rows are text-only), so both get stripped automatically —
-    // meaning the revenue/GP numbers are just the numeric rows in what's left,
-    // with no header row of our own to skip. "Coverage"/"margin" rows are found
-    // by their own label text, which IS still present in the returned rows.
-    const findRow = (matchText) => executive.find(r => r.some(cell => txt(cell).toLowerCase().includes(matchText))) || null;
-    const numericRows = executive.filter(r => isNum(r[0]));
-    const revenue = numericRows[0] || [{},{},{},{}];
-    const gp      = numericRows[1] || [{},{},{},{}];
-    const pipeCovRow = findRow('coverage') || [{},{},{},{}];
-    const marginRow  = findRow('margin') || [{},{},{},{}];
+// ---- Executive summary: Google's API detects 2 header rows here (since the
+// first two sheet rows are text-only), so both get stripped automatically —
+// meaning the revenue/GP numbers are just the numeric rows in what's left,
+// with no header row of our own to skip. "Coverage"/"margin" rows are found
+// by their own label text, which IS still present in the returned rows.
+const findRow = (matchText) => executive.find(r => r.some(cell => txt(cell).toLowerCase().includes(matchText))) || null;
+const numericRows = executive.filter(r => isNum(r[0]));
+const revenue = numericRows[0] || [{},{},{},{}];
+const gp = numericRows[1] || [{},{},{},{}];
+const pipeCovRow = findRow('coverage') || [{},{},{},{}];
+const marginRow = findRow('margin') || [{},{},{},{}];
 
-    lastData = { qsNames, qsQuoted, qsWon, qsWinRate, qsHitRate, totalRow,
-                 pipeLabels, pipeCounts, pipeValues, divNames, divTarget, divAchieved,
-                 revenue, gp, pipeCov: pipeCovRow, margin: marginRow };
+lastData = { qsNames, qsQuoted, qsWon, qsWinRate, qsHitRate, totalRow,
+pipeLabels, pipeCounts, pipeValues, divNames, divTarget, divAchieved,
+revenue, gp, pipeCov: pipeCovRow, margin: marginRow };
 
-    renderStatCards(lastData);
-    renderCharts(lastData);
-    status.textContent = 'synced ' + new Date().toLocaleTimeString();
-    firstLoad = false;
-  } catch (err) {
-    status.textContent = 'error — check sheet is shared as "anyone with the link"';
-    console.error(err);
-  } finally {
-    btn.disabled = false;
-  }
+renderStatCards(lastData);
+renderCharts(lastData);
+status.textContent = 'synced ' + new Date().toLocaleTimeString();
+firstLoad = false;
+} catch (err) {
+status.textContent = 'error — check sheet is shared as "anyone with the link"';
+console.error(err);
+} finally {
+btn.disabled = false;
+}
 }
 
 function renderStatCards(d){
-  const revTarget = num(d.revenue[0]), revWon = num(d.revenue[1]), revPct = pct(d.revenue[3]);
-  const gpTarget = num(d.gp[0]), gpWon = num(d.gp[1]), gpPct = pct(d.gp[3]);
-  const totalWon = num(d.totalRow[4]), totalLost = num(d.totalRow[5]);
-  const totalQuotedMn = num(d.totalRow[6]) / 1_000_000;
-  const totalWonValueMn = num(d.totalRow[7]) / 1_000_000;
-  const overallWinRateDisplay = fmt(d.totalRow[8]) || '—';
-  const overallWinRateFrac = pct(d.totalRow[8]) / 100;
+const revTarget = num(d.revenue[0]), revWon = num(d.revenue[1]), revPct = pct(d.revenue[3]);
+const gpTarget = num(d.gp[0]), gpWon = num(d.gp[1]), gpPct = pct(d.gp[3]);
+const totalWon = num(d.totalRow[4]), totalLost = num(d.totalRow[5]);
+const totalQuotedMn = num(d.totalRow[6]) / 1_000_000;
+const totalWonValueMn = num(d.totalRow[7]) / 1_000_000;
+const overallWinRateDisplay = fmt(d.totalRow[8]) || '—';
+const overallWinRateFrac = pct(d.totalRow[8]) / 100;
+const rawMultiple = revTarget > 0 ? (totalQuotedMn / revTarget) : 0;
 
-  const rawMultiple = revTarget > 0 ? (totalQuotedMn / revTarget) : 0;
-  const openStatuses = ['Submitted', 'Under Review', 'Quoting', 'On Hold'];
-  const openValueMn = d.pipeLabels.reduce((sum, label, i) =>
-    openStatuses.includes(label) ? sum + d.pipeValues[i] : sum, 0);
-  const expectedTotalMn = totalWonValueMn + (openValueMn * overallWinRateFrac);
-  const weightedPct = revTarget > 0 ? (expectedTotalMn / revTarget) * 100 : 0;
+const openStatuses = ['Submitted', 'Under Review', 'Quoting', 'On Hold'];
+const openValueMn = d.pipeLabels.reduce((sum, label, i) =>
+openStatuses.includes(label) ? sum + d.pipeValues[i] : sum, 0);
+const expectedTotalMn = totalWonValueMn + (openValueMn * overallWinRateFrac);
+const weightedPct = revTarget > 0 ? (expectedTotalMn / revTarget) * 100 : 0;
 
-  const cards = [
-    { label:'Revenue: Target vs Won', value:`${revWon.toFixed(1)} / ${revTarget.toFixed(0)} Mn`, footer:`${revPct.toFixed(1)}% of target` },
-    { label:'Gross Profit: Target vs Won', value:`${gpWon.toFixed(1)} / ${gpTarget.toFixed(0)} Mn`, footer:`${gpPct.toFixed(1)}% of target` },
-    { label:'Weighted Pipeline (Win-Rate Adj.)', value:`${weightedPct.toFixed(0)}%`, footer:`raw pipeline is ${rawMultiple.toFixed(1)}× target (unweighted)` },
-    { label:'Overall Win Rate', value: overallWinRateDisplay, footer:`${totalWon} won · ${totalLost} lost` },
-  ];
+const cards = [
+{ label:'Revenue: Target vs Won', value:`${revWon.toFixed(1)} / ${revTarget.toFixed(0)} Mn`, footer:`${revPct.toFixed(1)}% of target` },
+{ label:'Gross Profit: Target vs Won', value:`${gpWon.toFixed(1)} / ${gpTarget.toFixed(0)} Mn`, footer:`${gpPct.toFixed(1)}% of target` },
+{ label:'Weighted Pipeline (Win-Rate Adj.)', value:`${weightedPct.toFixed(0)}%`, footer:`raw pipeline is ${rawMultiple.toFixed(1)}× target (unweighted)` },
+{ label:'Overall Win Rate', value: overallWinRateDisplay, footer:`${totalWon} won · ${totalLost} lost` },
+];
 
-  const grid = document.getElementById('statCards');
-  const isFirst = firstLoad || grid.children.length === 0;
-  grid.innerHTML = cards.map((c,i) => `
-    <div class="plate${isFirst ? ' enter' : ' flash'}" style="animation-delay:${isFirst ? (i*0.07)+'s' : '0s'}">
-      <div class="label">${c.label}</div>
-      <div class="value">${c.value}</div>
-      <div class="footer">${c.footer}</div>
-    </div>`).join('');
+const grid = document.getElementById('statCards');
+const isFirst = firstLoad || grid.children.length === 0;
+grid.innerHTML = cards.map((c,i) => `
+<div class="plate${isFirst ? ' enter' : ' flash'}" style="animation-delay:${isFirst ? (i*0.07)+'s' : '0s'}">
+<div class="label">${c.label}</div>
+<div class="value">${c.value}</div>
+<div class="footer">${c.footer}</div>
+</div>`).join('');
 }
 
 function upsertChart(id, config){
-  if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id), config);
+if (charts[id]) charts[id].destroy();
+charts[id] = new Chart(document.getElementById(id), config);
 }
 
 function renderCharts(d){
-  Chart.defaults.color = '#7e97ab';
-  Chart.defaults.borderColor = 'rgba(255,255,255,.06)';
-  Chart.defaults.font.family = "'Inter', sans-serif";
-  const animDuration = REDUCED_MOTION ? 0 : 900;
+Chart.defaults.color = '#7e97ab';
+Chart.defaults.borderColor = 'rgba(255,255,255,.06)';
+Chart.defaults.font.family = "'Inter', sans-serif";
+const animDuration = REDUCED_MOTION ? 0 : 900;
 
-  upsertChart('valueChart', {
-    type:'bar',
-    data:{ labels:d.qsNames, datasets:[
-      { label:'Quoted (Mn)', data:d.qsQuoted, backgroundColor:'#4fc6de', borderRadius:3 },
-      { label:'Won (Mn)', data:d.qsWon, backgroundColor:'#ff7a45', borderRadius:3 },
-    ]},
-    options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, scales:{ y:{ beginAtZero:true } } }
-  });
+upsertChart('valueChart', {
+type:'bar',
+data:{ labels:d.qsNames, datasets:[
+{ label:'Quoted (Mn)', data:d.qsQuoted, backgroundColor:'#4fc6de', borderRadius:3 },
+{ label:'Won (Mn)', data:d.qsWon, backgroundColor:'#ff7a45', borderRadius:3 },
+]},
+options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, scales:{ y:{ beginAtZero:true } } }
+});
 
-  upsertChart('rateChart', {
-    type:'bar',
-    data:{ labels:d.qsNames, datasets:[
-      { label:'Win Rate %', data:d.qsWinRate, backgroundColor:'#ffc857', borderRadius:3 },
-      { label:'Hit Rate %', data:d.qsHitRate, backgroundColor:'#4fc6de', borderRadius:3 },
-    ]},
-    options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, scales:{ y:{ beginAtZero:true, max:100 } } }
-  });
+upsertChart('rateChart', {
+type:'bar',
+data:{ labels:d.qsNames, datasets:[
+{ label:'Win Rate %', data:d.qsWinRate, backgroundColor:'#ffc857', borderRadius:3 },
+{ label:'Hit Rate %', data:d.qsHitRate, backgroundColor:'#4fc6de', borderRadius:3 },
+]},
+options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, scales:{ y:{ beginAtZero:true, max:100 } } }
+});
 
-  upsertChart('pipelineChart', {
-    type:'doughnut',
-    data:{ labels:d.pipeLabels, datasets:[{ data:d.pipeCounts,
-      backgroundColor:['#4fc6de','#ffc857','#3ddc84','#ff5470','#7e97ab','#ff7a45','#8a7bf7'],
-      borderColor:'#0f2436', borderWidth:2 }]},
-    options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' } }
-  });
+upsertChart('pipelineChart', {
+type:'doughnut',
+data:{ labels:d.pipeLabels, datasets:[{ data:d.pipeCounts,
+backgroundColor:['#4fc6de','#ffc857','#3ddc84','#ff5470','#7e97ab','#ff7a45','#8a7bf7'],
+borderColor:'#0f2436', borderWidth:2 }]},
+options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' } }
+});
 
-  upsertChart('divisionChart', {
-    type:'bar',
-    data:{ labels:d.divNames, datasets:[
-      { label:'Target (Mn)', data:d.divTarget, backgroundColor:'#28425a', borderRadius:3 },
-      { label:'Achieved (Mn)', data:d.divAchieved, backgroundColor:'#ff7a45', borderRadius:3 },
-    ]},
-    options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, indexAxis:'y', scales:{ x:{ beginAtZero:true } } }
-  });
+upsertChart('divisionChart', {
+type:'bar',
+data:{ labels:d.divNames, datasets:[
+{ label:'Target (Mn)', data:d.divTarget, backgroundColor:'#28425a', borderRadius:3 },
+{ label:'Achieved (Mn)', data:d.divAchieved, backgroundColor:'#ff7a45', borderRadius:3 },
+]},
+options:{ responsive:true, animation:{ duration:animDuration, easing:'easeOutQuart' }, indexAxis:'y', scales:{ x:{ beginAtZero:true } } }
+});
 }
 
 function escapeHtml(s){
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function inlineFormat(s){
-  return escapeHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+return escapeHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 function formatInsight(raw){
-  const labelColors = { wins:'var(--good)', risks:'var(--bad)', recommendations:'var(--cyan)' };
-  const blocks = raw.trim().split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
-  return blocks.map(block => {
-    const headerMatch = block.match(/^\*\*(.+?)\*\*\s*:?\s*\n?([\s\S]*)$/);
-    const label = headerMatch ? headerMatch[1].trim() : null;
-    const body = (headerMatch ? headerMatch[2] : block).trim();
-    const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
-    const isList = lines.length > 0 && lines.every(l => /^\d+[\.\)]\s/.test(l));
-    const bodyHtml = isList
-      ? '<ol>' + lines.map(l => '<li>' + inlineFormat(l.replace(/^\d+[\.\)]\s*/, '')) + '</li>').join('') + '</ol>'
-      : '<p>' + inlineFormat(body).replace(/\n/g, '<br>') + '</p>';
-    const color = label ? (labelColors[label.toLowerCase()] || 'var(--cyan)') : null;
-    return `<div class="insight-block">${label ? `<div class="insight-label" style="color:${color}">${escapeHtml(label)}</div>` : ''}${bodyHtml}</div>`;
-  }).join('');
+const labelColors = { wins:'var(--good)', risks:'var(--bad)', recommendations:'var(--cyan)' };
+const blocks = raw.trim().split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+return blocks.map(block => {
+const headerMatch = block.match(/^\*\*(.+?)\*\*\s*:?\s*\n?([\s\S]*)$/);
+const label = headerMatch ? headerMatch[1].trim() : null;
+const body = (headerMatch ? headerMatch[2] : block).trim();
+const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
+const isList = lines.length > 0 && lines.every(l => /^\d+[\.\)]\s/.test(l));
+const bodyHtml = isList
+? '<ol>' + lines.map(l => '<li>' + inlineFormat(l.replace(/^\d+[\.\)]\s*/, '')) + '</li>').join('') + '</ol>'
+: '<p>' + inlineFormat(body).replace(/\n/g, '<br>') + '</p>';
+const color = label ? (labelColors[label.toLowerCase()] || 'var(--cyan)') : null;
+return `<div class="insight-block">${label ? `<div class="insight-label" style="color:${color}">${escapeHtml(label)}</div>` : ''}${bodyHtml}</div>`;
+}).join('');
 }
 function revealInsight(el, html){
-  el.innerHTML = html;
-  const blocks = el.querySelectorAll('.insight-block');
-  blocks.forEach((b, i) => {
-    b.style.animationDelay = REDUCED_MOTION ? '0s' : (i * 0.12) + 's';
-    requestAnimationFrame(() => b.classList.add('reveal'));
-  });
+el.innerHTML = html;
+const blocks = el.querySelectorAll('.insight-block');
+blocks.forEach((b, i) => {
+b.style.animationDelay = REDUCED_MOTION ? '0s' : (i * 0.12) + 's';
+requestAnimationFrame(() => b.classList.add('reveal'));
+});
 }
 
 async function getAIInsights(){
-  const btn = document.getElementById('aiBtn');
-  const out = document.getElementById('insightsText');
-  if (!lastData) { out.textContent = 'Load the dashboard data first.'; return; }
-  btn.disabled = true;
-  out.style.color = 'var(--muted)';
-  out.textContent = 'Thinking…';
-  try {
-    const res = await fetch('/.netlify/functions/ai-insights', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ summary: lastData })
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error?.message || json.error || 'Request failed');
-    out.style.color = '';
-    revealInsight(out, formatInsight(json.insight));
-  } catch (err) {
-    out.style.color = 'var(--bad)';
-    out.textContent = 'Could not generate insights: ' + err.message + ' (check the GROQ_API_KEY environment variable is set in Netlify).';
-  } finally {
-    btn.disabled = false;
-  }
+const btn = document.getElementById('aiBtn');
+const out = document.getElementById('insightsText');
+if (!lastData) { out.textContent = 'Load the dashboard data first.'; return; }
+btn.disabled = true;
+out.style.color = 'var(--muted)';
+out.textContent = 'Thinking…';
+try {
+const res = await fetch('/.netlify/functions/ai-insights', {
+method:'POST',
+headers:{ 'Content-Type':'application/json' },
+body: JSON.stringify({ summary: lastData })
+});
+const json = await res.json();
+if (!res.ok) throw new Error(json.error?.message || json.error || 'Request failed');
+out.style.color = '';
+revealInsight(out, formatInsight(json.insight));
+} catch (err) {
+out.style.color = 'var(--bad)';
+out.textContent = 'Could not generate insights: ' + err.message + ' (check the GROQ_API_KEY environment variable is set in Netlify).';
+} finally {
+btn.disabled = false;
+}
 }
 
 loadAll();
 setInterval(loadAll, REFRESH_MS);
 </script>
-</body>
-</html>
