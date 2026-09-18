@@ -1,3 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard</title>
+<meta name="description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta property="og:description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta property="og:image" content="https://dulcet-puffpuff-958ab0.netlify.app/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:url" content="https://dulcet-puffpuff-958ab0.netlify.app/" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta name="twitter:description" content="Hayleys Fentons : GA Division - Live Sales Pipeline Dashboard" />
+<meta name="twitter:image" content="https://dulcet-puffpuff-958ab0.netlify.app/og-image.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{
+--bg:#0a1620; --bg2:#0d1f2e; --panel:#0f2436; --panel2:#122a3f;
+--border:#1d3b52; --border-soft:#16304680;
+--text:#e9f1f7; --muted:#7e97ab; --faint:#4d6478;
+--accent:#ff7a45; --accent-soft:#ff7a4522; --cyan:#4fc6de; --cyan-soft:#4fc6de22;
+--good:#3ddc84; --bad:#ff5470; --warn:#ffc857;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+margin:0; color:var(--text);
+font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+background:
+radial-gradient(ellipse 900px 500px at 15% -10%, #123049 0%, transparent 60%),
+radial-gradient(ellipse 700px 500px at 100% 10%, #0f2a3d 0%, transparent 55%),
+repeating-linear-gradient(0deg, var(--bg2) 0px, var(--bg2) 39px, #ffffff08 39px, #ffffff08 40px),
+repeating-linear-gradient(90deg, var(--bg2) 0px, var(--bg2) 39px, #ffffff08 39px, #ffffff08 40px),
+var(--bg);
+padding:28px 28px 60px;
+min-height:100vh;
+}
+.headline{
+font-family:'Space Grotesk',sans-serif;
+}
+/* ---------- header ---------- */
+header{
+display:flex; justify-content:space-between; align-items:flex-end; gap:24px;
+flex-wrap:wrap; margin-bottom:22px; padding-bottom:18px;
+border-bottom:1px solid var(--border-soft);
+}
+.brand{ display:flex; align-items:center; gap:18px; }
+.brand img.logo{ height:52px; width:auto; display:block; }
+.brand .brand-text h1{
+font-size:26px; font-weight:700; margin:0; letter-spacing:-0.02em;
+}
+.brand .sub{color:var(--muted); font-size:13.5px; margin-top:6px; max-width:46ch;}
+.titleblock{
+display:grid; grid-template-columns:auto auto; gap:2px 18px;
+font-family:'Space Grotesk',sans-serif; font-size:11px; letter-spacing:.06em;
+border:1px solid var(--border); border-radius:4px; padding:12px 16px;
+background:var(--panel2); position:relative; min-width:230px;
+}
+.titleblock::before, .titleblock::after,
+.plate::before, .plate::after{
+content:''; position:absolute; width:10px; height:10px;
+border-color:var(--faint); border-style:solid; border-width:0;
+}
+.titleblock::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
+.titleblock::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
+.titleblock dt{color:var(--faint); text-transform:uppercase;}
+.titleblock dd{margin:0; color:var(--text); text-align:right; text-transform:uppercase;}
+.titleblock .live-row dd{color:var(--accent); display:flex; align-items:center; gap:6px; justify-content:flex-end;}
+.live-dot{
+width:7px; height:7px; border-radius:50%; background:var(--accent);
+box-shadow:0 0 0 0 var(--accent-soft);
+animation:pulse 2.2s ease-out infinite;
+}
+@keyframes pulse{
+0%{ box-shadow:0 0 0 0 #ff7a4560; }
+70%{ box-shadow:0 0 0 8px #ff7a4500; }
+100%{ box-shadow:0 0 0 0 #ff7a4500; }
+}
+/* ---------- toolbar ---------- */
+.toolbar{display:flex; align-items:center; gap:12px; margin-bottom:26px; flex-wrap:wrap;}
+button{
+font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px;
+letter-spacing:.02em; border-radius:6px; padding:10px 18px; cursor:pointer;
+border:1px solid transparent; transition:transform .12s ease, box-shadow .12s ease;
+}
+button:active{ transform:translateY(1px); }
+button:disabled{ opacity:.5; cursor:default; transform:none; }
+#refreshBtn{ background:var(--accent); color:#1a0d05; box-shadow:0 0 0 0 var(--accent-soft); }
+#refreshBtn:hover:not(:disabled){ box-shadow:0 0 20px -4px #ff7a4570; }
+#aiBtn{ background:transparent; color:var(--cyan); border-color:var(--cyan); }
+#aiBtn:hover:not(:disabled){ background:var(--cyan-soft); }
+#status{font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace;}
+/* ---------- stat plates ---------- */
+.grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px;}
+@media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.grid{grid-template-columns:1fr;}}
+.plate{
+background:linear-gradient(180deg, var(--panel), var(--panel2));
+border:1px solid var(--border); border-radius:6px; padding:18px 18px 16px;
+position:relative;
+}
+.plate::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
+.plate::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
+.plate.enter{ opacity:0; transform:translateY(10px); animation:riseIn .5s cubic-bezier(.2,.8,.2,1) forwards; }
+.plate.flash{ animation:flash 1s ease-out; }
+@keyframes riseIn{ to{ opacity:1; transform:translateY(0); } }
+@keyframes flash{ 0%{ box-shadow:0 0 0 1px var(--cyan-soft), 0 0 24px -4px var(--cyan-soft);} 100%{ box-shadow:none; } }
+.plate .label{
+color:var(--faint); font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+font-family:'Space Grotesk',sans-serif; font-weight:600;
+}
+.plate .value{
+font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600;
+margin-top:10px; letter-spacing:-.01em; font-variant-numeric:tabular-nums;
+}
+.plate .footer{ font-size:12px; color:var(--muted); margin-top:6px; }
+/* ---------- charts ---------- */
+.charts{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:22px;}
+@media(max-width:980px){.charts{grid-template-columns:1fr;}}
+.chart-card{
+background:linear-gradient(180deg, var(--panel), var(--panel2));
+border:1px solid var(--border); border-radius:6px; padding:18px;
+opacity:0; transform:translateY(10px); animation:riseIn .55s cubic-bezier(.2,.8,.2,1) forwards;
+transition:border-color .2s ease;
+}
+.chart-card:hover{ border-color:#2c5170; }
+.chart-card h3{
+margin:0 0 14px 0; font-size:13px; font-weight:600; color:var(--muted);
+font-family:'Space Grotesk',sans-serif; letter-spacing:.02em;
+display:flex; align-items:center; gap:8px;
+}
+.chart-card h3::before{ content:''; width:4px; height:14px; background:var(--accent); border-radius:1px; display:inline-block; }
+canvas{max-height:280px;}
+/* ---------- insights ---------- */
+#insightsCard{
+background:linear-gradient(180deg, var(--panel), var(--panel2));
+border:1px solid var(--border); border-radius:6px; padding:20px;
+opacity:0; transform:translateY(10px); animation:riseIn .6s cubic-bezier(.2,.8,.2,1) forwards;
+}
+#insightsCard h3{
+margin:0 0 4px 0; font-size:13px; color:var(--muted); font-weight:600;
+font-family:'Space Grotesk',sans-serif; letter-spacing:.02em;
+display:flex; align-items:center; gap:8px;
+}
+#insightsCard h3::before{ content:''; width:4px; height:14px; background:var(--cyan); border-radius:1px; display:inline-block; }
+#insightsText{ line-height:1.6; font-size:14.5px; margin-top:14px; }
+.insight-block{ margin-bottom:20px; opacity:0; transform:translateY(6px); }
+.insight-block:last-child{ margin-bottom:0; }
+.insight-block.reveal{ animation:riseIn .45s ease forwards; }
+.insight-label{
+font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12.5px;
+text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px;
+}
+.insight-block p{ margin:0; color:var(--text); }
+.insight-block ol{ margin:0; padding-left:22px; }
+.insight-block li{ margin-bottom:8px; line-height:1.55; color:var(--text); }
+.insight-block li::marker{ color:var(--accent); font-weight:600; }
+.insight-block strong{ color:var(--text); font-weight:600; }
+@media (prefers-reduced-motion: reduce){
+*{ animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important; }
+}
+</style>
+</head>
+<body>
+<header>
+<div class="brand">
+<img src="logo.png" alt="Hayleys Fentons" class="logo" />
+<div class="brand-text">
+<h1 class="headline">Tendering Tracker</h1>
+<div class="sub">Hayleys Fentons : GA Division<br>Live Sales Pipeline Dashboard</div>
+</div>
+</div>
+<dl class="titleblock">
+<dt>Division</dt><dd>GA</dd>
+<dt>Document</dt><dd>Tendering&nbsp;Tracker</dd>
+<dt>Source</dt><dd>Google&nbsp;Sheets</dd>
+<div class="live-row" style="display:contents;">
+<dt>Status</dt><dd><span class="live-dot"></span>Live</dd>
+</div>
+</dl>
+</header>
+<div class="toolbar">
+<button id="refreshBtn" onclick="loadAll()">↻ Refresh now</button>
+<button id="aiBtn" onclick="getAIInsights()">✨ Generate AI insights</button>
+<span id="status">initializing…</span>
+</div>
+<div class="grid" id="statCards"></div>
+<div class="charts">
+<div class="chart-card" style="animation-delay:.05s">
+<h3>Quoted vs. Won Value by QS (LKR, Mn)</h3>
+<canvas id="valueChart"></canvas>
+</div>
+<div class="chart-card" style="animation-delay:.1s">
+<h3>Win Rate vs. Hit Rate by QS</h3>
+<canvas id="rateChart"></canvas>
+</div>
+<div class="chart-card" style="animation-delay:.15s">
+<h3>Pipeline by Status (Count)</h3>
+<canvas id="pipelineChart"></canvas>
+</div>
+<div class="chart-card" style="animation-delay:.2s">
+<h3>Business Obtaining — Target vs. Achieved by Division (Mn)</h3>
+<canvas id="divisionChart"></canvas>
+</div>
+</div>
+<div id="insightsCard" style="animation-delay:.25s">
+<h3>AI Insights</h3>
+<div id="insightsText" style="color:var(--muted);">Click "Generate AI insights" for a short written briefing on the numbers above.</div>
+</div>
+
 <script>
 /* ====================== CONFIG — edit these for your sheet ====================== */
 const SHEET_ID = "1zTyfDGcHhU4A0D4M7wrZUGUfjziuBJV3iFNJLYAU3eg";
@@ -260,3 +477,5 @@ btn.disabled = false;
 loadAll();
 setInterval(loadAll, REFRESH_MS);
 </script>
+</body>
+</html>
